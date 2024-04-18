@@ -34,7 +34,7 @@ def main():
     # Check if extent is global or regional
     bbox = [-180.0, 180.0, -90.0, 90.0]
     if args.extent != "global":
-        bbox = [int(coord) for coord in args.extent.split(",")]
+        bbox = [coord for coord in args.extent.split(",")]
 
     # Read in the landmask
     landmask_in = xr.open_dataset(args.landmask_file)["land"]
@@ -49,6 +49,9 @@ def main():
 
     # Create composite mask for all the runs.
     run_mask = create_run_mask(landmask_cut, args.nmasks)
+
+    # Reindex the local run mask to be the same as the global land mask. Set the fill value to 0 i.e. not active.
+    run_mask = run_mask.reindex_like(landmask_in, fill_value = 0)
 
     # Save mask to file to allow for an easy check.
     os.makedirs(f"{args.outpath}", exist_ok = True)
