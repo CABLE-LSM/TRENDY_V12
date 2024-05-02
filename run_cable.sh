@@ -1,21 +1,18 @@
 #!/usr/bin/env bash
 
-# Gadi
-# https://opus.nci.org.au/display/Help/How+to+submit+a+job
-#PBS -N TRENDY_S0
-#PBS -P rp23
-#PBS -q normal
-#PBS -p 600
-#PBS -l walltime=10:30:00
-#PBS -l mem=4GB
-#PBS -l ncpus=1
-#PBS -l storage=gdata/rp23+scratch/rp23+scratch/hh5
-#PBS -l software=netCDF:MPI:Intel:GNU
-#PBS -r y
-#PBS -l wd
-#PBS -j oe
-#PBS -S /bin/bash
-
+# biocomp
+#SBATCH --ignore-pbs
+#SBATCH --job-name=trendyS0
+#SBATCH --output=%x-%j.out
+#SBATCH --error=%x-%j.out
+# #SBATCH --partition=short
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=12:30:00
+#SBATCH --mem=4G
+#SBATCH --mail-type=FAIL,STAGE_OUT,TIME_LIMIT,INVALID_DEPEND,END
+#SBATCH --mail-user=matthias.cuntz@inrae.fr
 
 # --------------------------------------------------------------------
 #

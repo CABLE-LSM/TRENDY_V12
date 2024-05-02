@@ -1,4 +1,4 @@
-#!/g/data/hh5/public/apps/cms_conda_scripts/analysis3.d/bin/python3
+#!/usr/bin/env python3
 # Program to split the global landmask into submasks
 # The split ensures we pick land points from various regions
 # to avoid having all land points frozen if picking all

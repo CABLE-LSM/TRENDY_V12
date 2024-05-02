@@ -1,18 +1,16 @@
-[//]: # (Author: Lachlan Whyborn)
-[//]: # (Date Modified: )
+[//]: # (Author: Lachlan Whyborn, Matthias Cuntz)
+[//]: # (Date Modified: 2024-05-02)
 
 # TRENDY v12 Experiment Configuration
 
-This repository contains the auxiliary scripts required to run the TRENDY configuration on the RP23 NCI project on Gadi.
+This repository contains the auxiliary scripts required to run the TRENDY configuration on the biocomp cluster with files in /home/mcuntz.
 
 ## Usage
 
-Copy these scripts to do the desired run directory on Gadi. Access to the HH5 project is also required to run the python landmask script. The changes needed to be made by the user are in the ```run_TRENDY.sh``` script and are:
+Copy these scripts to do the desired run directory on biocomp. A valid anaconda environment with the name pystd is assumed. The changes needed to be made by the user are in the ```run_TRENDY.sh``` script and are:
 
 * Specify the location of the ```cable``` repository, by setting the ```cablecode``` variable on line 46.
 * Set the experiment to run by setting the ```experiment``` variable on line 26. The experiment names correspond to a set of internal configuration options.
-
-It's still not entirely clear what each of the experiments do. This will be clarified after discussions with the original custodians of the configuration.
 
 ## Resources
 
