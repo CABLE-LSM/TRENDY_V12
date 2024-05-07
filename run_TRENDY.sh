@@ -58,6 +58,9 @@ cleanup_script="${rundir}/cleanup.sh"
 # Cable executable- we should move this to bin
 exe="${cablecode}/offline/cable"
 
+# Append the location of the cablepop python module to the PYTHONPATH
+export PYTHONPATH=${cablecode}/scripts:${PYTHONPATH}
+
 # The location of the data- note that the "aux" variable has been removed,
 # and all the data now lives in rp23/no_provenance
 datadir="/g/data/rp23/data/no_provenance/"
@@ -90,8 +93,8 @@ if [[ ${run_model} -eq 1 ]] ; then
     sed -i "s!^experiment_name=.*!experiment_name='${experiment_name}'!" $run_script
     sed -i "s!^cablecode=.*!cablecode='${cablecode}'!" $run_script
     sed -i "s!^rundir=.*!rundir='${rundir}'!" $run_script
-	 sed -i "s!^scriptdir=.*!scriptdir='${scriptdir}'!" $run_script
-	 sed -i "s!^datadir=.*!datadir='${datadir}'!" $run_script
+    sed -i "s!^scriptdir=.*!scriptdir='${scriptdir}'!" $run_script
+    sed -i "s!^datadir=.*!datadir='${datadir}'!" $run_script
     sed -i "s!^exe=.*!exe='${exe}'!" $run_script
     sed -i "s!^MetPath=.*!MetPath='${GlobalMetPath}'!" $run_script
     sed -i "s!^MetVersion=.*!MetVersion='${MetVersion}'!" $run_script
