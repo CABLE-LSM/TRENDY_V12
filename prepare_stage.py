@@ -1,5 +1,5 @@
 # Author: Lachlan Whyborn
-# Last Modified: Wed 08 May 2024 01:06:27 PM AEST
+# Last Modified: Wed 15 May 2024 01:11:19 PM AEST
 
 import argparse
 import yaml
@@ -67,7 +67,7 @@ def BuildNamelists(NamelistDir, TargetDir, ConfigFile, NRuns):
                 os.makedirs(f"{TargetDir}/run{Run:03d}", exist_ok = True)
                 WriteFile = f"{TargetDir}/run{Run:03d}/namelists/{Namelist}.nml"
                 with open(WriteFile, 'w+') as WriteTo:
-                    # Modify any instances of <run> to the desired run___
+                    # Modify any instances of <run> to the desired run<runID>
                     RunText = FileText.replace("<run>", f"run{Run:03d}")
 
                     # Write the new string to file

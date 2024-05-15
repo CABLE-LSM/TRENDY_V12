@@ -21,7 +21,7 @@ cable:
   cable_user%c13o2_restart_in_flux  : ""
   cable_user%c13o2_restart_in_pools : ""
   filename%out                      : "stage_2_zero_biomass/<run>/outputs/cru_out_cable.nc"
-  filename%restart_in               : "cru_out_cable
+  filename%restart_in               : "cru_out_cable"
 cru:
 luc:
 

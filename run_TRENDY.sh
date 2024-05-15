@@ -46,7 +46,7 @@ if [[ ${RUN_CLIMATE_SPINUP} -eq 1 ]] ; then
         rm stage_1_climate_spinup -r
     fi
     mkdir stage_1_climate_spinup -p
-    python3 prepare_stage.py namelists stage_1_climate_spinup/ climate_spinup_config.yml $NRUNS
+    python3 prepare_stage.py namelists stage_1_climate_spinup/ stage_configurations/climate_spinup_config.yml $NRUNS
 fi
 
 if [[ ${RUN_ZERO_BIOMASS} -eq 1 ]] ; then
@@ -54,5 +54,5 @@ if [[ ${RUN_ZERO_BIOMASS} -eq 1 ]] ; then
         rm stage_2_zero_biomass -r
     fi
     mkdir stage_2_zero_biomass -p
-    python3 prepare_stage.py namelists stage_2_zero_biomass zero_biomass_config.yml $NRUNS
+    python3 prepare_stage.py namelists stage_2_zero_biomass stage_configurations/zero_biomass_config.yml $NRUNS
 fi
