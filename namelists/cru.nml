@@ -1,10 +1,29 @@
-&crunml
-    BasePath     = <STRING>
-    MetPath      = <STRING>
-    MetVersion   = <STRING>
-    ReadDiffFrac = <LOGICAL>
+&MetConfig
+    rainFile = <STRING>
+    lwdnFile = <STRING>
+    swdnFile = <STRING>
+    presFile = <STRING>
+    qairFile = <STRING>
+    TmaxFile = <STRING>
+    TminFile = <STRING>
+    uwindFile = <STRING>
+    vwindFile = <STRING>
+    fDiffFile = <STRING>
+    CO2File = <STRING>
+    NDepFile = <STRING>
     LandMaskFile = <STRING>
-    Run          = <STRING>
+    rainRecycle <LOGICAL>
+    lwdnRecycle <LOGICAL>
+    swdnRecycle <LOGICAL>
+    presRecycle <LOGICAL>
+    qairRecycle <LOGICAL>
+    TmaxRecycle <LOGICAL>
+    TminRecycle <LOGICAL>
+    uWindRecycle <LOGICAL>
+    vWindRecycle <LOGICAL>
+    fDiffRecycle <LOGICAL>
+    CO2Method = <STRING>
+    NDepMethod = <STRING>
+    ReadDiffFrac = <LOGICAL>
     DThrs        = <REAL>                ! **CABLE** timestep hours (not the met timestep)
-    DirectRead   = <LOGICAL>
 /
