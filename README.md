@@ -12,7 +12,7 @@ Copy these scripts to do the desired run directory on Gadi. Access to the HH5 pr
 * Specify the location of the ```cable``` repository, by setting the ```cablecode``` variable on line 46.
 * Set the experiment to run by setting the ```experiment``` variable on line 26. The experiment names correspond to a set of internal configuration options.
 
-It's still not entirely clear what each of the experiments do. This will be clarified after discussions with the original custodians of the configuration.
+It's still not entirely clear what each of the experiments do. This will be clarified after discussions with the original custodians of the configuration. At the moment, I think the ```S0``` run is the one that works as intended straight out of the box. Some work on ```run_cable.sh``` will be required to set the meteorogical recycling and atmospheric CO2/N deposition correctly for the other runs.
 
 ## Resources
 
