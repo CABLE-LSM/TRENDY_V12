@@ -58,6 +58,10 @@ cleanup_script="${rundir}/cleanup.sh"
 # Cable executable- we should move this to bin
 exe="${cablecode}/offline/cable"
 
+# Add the scripts directory to the pythonpath for cablepop python module
+export PYTHONPATH=${cablecode}/scripts:${PYTHONPATH}
+
+
 # The location of the data- note that the "aux" variable has been removed,
 # and all the data now lives in rp23/no_provenance
 datadir="/g/data/rp23/data/no_provenance/"
