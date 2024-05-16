@@ -25,11 +25,6 @@ do
     RUN_FLAGS[$STAGE]=1
 done
 
-# Now bind the flags in the list to their respective stage flags
-SPLIT_LANDMASK=${RUN_FLAGS[0]}
-RUN_CLIMATE_SPINUP=${RUN_FLAGS[1]}
-RUN_ZERO_BIOMASS=${RUN_FLAGS[2]}
-
 LandmaskFile=${HOME}/Work/ANU/rp23/data/no_provenance/landmask/glob_ipsl_1x1.nc
 
 # Prepare the split landmask
@@ -40,19 +35,14 @@ if [[ ${SPLIT_LANDMASK} -eq 1 ]] ; then
     python3 split_landmask.py $LandmaskFile $NRUNS landmasks -e "global"
 fi
 
-# Run the climate spinup stage
-if [[ ${RUN_CLIMATE_SPINUP} -eq 1 ]] ; then
-    if [[ ${CLEAN} -eq 1 ]] ; then
-        rm stage_1_climate_spinup -r
-    fi
-    mkdir stage_1_climate_spinup -p
-    python3 prepare_stage.py namelists stage_1_climate_spinup/ stage_configurations/climate_spinup_config.yml $NRUNS
-fi
+# Unfortunately, bash cannot export array variables, so bind each of the flags to a descriptive name
+export RUN_CLIMATE_SPINUP=${RUN_FLAGS[1]}
+export RUN_ZERO_BIOMASS=${RUN_FLAGS[2]}
+export CABLEExecutable=${HOME}/CABLE/offline/cable
+export CLEAN
 
-if [[ ${RUN_ZERO_BIOMASS} -eq 1 ]] ; then
-    if [[ ${CLEAN} -eq 1 ]] ; then
-        rm stage_2_zero_biomass -r
-    fi
-    mkdir stage_2_zero_biomass -p
-    python3 prepare_stage.py namelists stage_2_zero_biomass stage_configurations/zero_biomass_config.yml $NRUNS
-fi
+# We use seq because we want 0 padded run IDs, and brace expansion doesn't allow variable inputs
+for RUN in $(seq -f "%03g" 1 ${NRUNS}); do
+    export RUN
+    ./run_Serial.sh
+done
