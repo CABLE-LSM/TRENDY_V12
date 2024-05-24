@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Read in the options from the options file
+source $1
+
+# Split the landmask
+if [[ ${SPLIT_LANDMASK} -eq 1 ]] ; then
+    if [[ ${CLEAN} -eq 1 ]] ; then
+        rm landmasks -r
+    fi
+    python3 split_landmask.py $LANDMASK_FILE $NRUNS landmasks -e $EXTENT
+fi
+
+# Start up the serial runs
+for RUN in $(seq -f "%03g" 1 ${NRUNS}); do
+    #qsub -v RUN=$RUN,CONFIG=$1 run_CABLE_Serial
+    run_CABLE_Serial RUN=$RUN,CONFIG=$1
+done

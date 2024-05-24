@@ -1,0 +1,13 @@
+# These configuration files prescribe the options that are changed from the defaults specified in each of the namelists.
+# If the namelists for the run are cable.nml, luc.nml and met.nml, then those entries must exist in this file, e.g.
+
+cable:
+  # Modified configuration options for stage. It is possible for these to be empty if all options remain the same.
+cru:
+  # Modified configuration options for stage. It is possible for these to be empty if all options remain the same.
+met:
+  # Modified configuration options for stage. It is possible for these to be empty if all options remain the same.
+
+# Keywords
+#   - <run>:  A placeholder for the run ID in the pseudo-parallel runs. Gets replaced by run%04d.
+#   - <home>: A placeholder for the absolute path of the directory the configuration is being run from.

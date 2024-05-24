@@ -1,5 +1,7 @@
+#!/usr/bin/env python3
+
 # Author: Lachlan Whyborn
-# Last Modified: Thu 16 May 2024 16:32:22
+# Last Modified: Fri 24 May 2024 08:56:26 PM AEST
 
 import argparse
 import yaml
@@ -27,22 +29,32 @@ def ReplaceOption(ConfigOption, OptionValue, FileText):
 
     return FileText
 
-def BuildNamelists(NamelistDir, TargetDir, ConfigFile, Run):
-    # Here we make the necessary changes to the namelists for the
-    # climate spinup stage.
-    # We should be able to read in the file as a string, then use a replace
-    # to rewrite the desired configuration options, and write the new string
-    # to the new namelist file.
+def BuildNamelists(StageName, RestartDir, Run, Cycle):
+    # Here we make the changes to the default namelists for the current stage.
+    # The changes to the defaults are contained in the respective config YAML files
+    # We read in the original namelists as a string, and make string replacements
+    # for the desired options.
+
+    # The building of the TargetDir and RestartDir is handled by the bash script.
+    # RestartDir is the location that we're getting the restart files from, and 
+    # TargetDir is the location of the current simulation stage.
+
     # We allow the user to prescribe any options that should be overwritten
-    with open(ConfigFile, 'r') as Cfg:
+    with open(f"stage_configurations/{StageName}.yml", 'r') as Cfg:
         ConfigOptions = yaml.safe_load(Cfg)
 
+    # Build the target directory which will be the location the stage is run from
+    # If Run and Cycle are not none, append them to the path
+    TargetDir = os.getcwd() + StageName
+    TargetDir = TargetDir + f"/{Run}" if Run else TargetDir
+    TargetDir = TargetDir + f"/{Cycle}" if Cycle else TargetDir
+
     # Ensure target directory is present
-    os.makedirs(f"{TargetDir}/run{Run:03d}/namelists/", exist_ok = True)
+    os.makedirs(f"{TargetDir}/namelists/", exist_ok = True)
 
     # We have an entry in the configoptions for each namelist, so we can iterate through
     for Namelist, NamelistOptions in ConfigOptions.items():
-        ReadFile = f"{NamelistDir}/{Namelist}.nml"
+        ReadFile = f"namelists/{Namelist}.nml"
         WriteFile = f"{TargetDir}/namelists/{Namelist}.nml"
         with open(ReadFile, 'r') as ReadFrom:
             # Read in the file as a string
@@ -55,37 +67,30 @@ def BuildNamelists(NamelistDir, TargetDir, ConfigFile, Run):
             # None
             if NamelistOptions is not None:
                 for ConfigOption, OptionValue in NamelistOptions.items():
-                    # This finds the string "ConfigOption*\n", and replaces it with the desired
-                    # option.
+                    # This finds the string "ConfigOption*\n", and replaces it
+                    # with the desired option.
                     # The function has the special handling for Fortran's booleans, 
                     # as python won't recognise .TRUE. and .FALSE. as booleans.
                     FileText = ReplaceOption(ConfigOption, OptionValue, FileText)
 
-            # For stage 2 onwards, we often have namelist options which refer to the previous
-            # stage data. To simplify this process, we allowed the keyword <home> to represent
-            # the master run directory. We replace all instances of <home> with the absolute
-            # path to run repository.
-            MasterDirectory = os.getcwd()
-            FileText = FileText.replace("<home>", MasterDirectory)
-            # At the end, we can make the run-appropriate substitutions and then write to file
-            os.makedirs(f"{TargetDir}/run{Run:03d}", exist_ok = True)
-            WriteFile = f"{TargetDir}/run{Run:03d}/namelists/{Namelist}.nml"
-            with open(WriteFile, 'w+') as WriteTo:
-                # Modify any instances of <run> to the desired run<runID>
-                RunText = FileText.replace("<run>", f"run{Run:03d}")
+            # Usually the simulations will involve reading restart data from a previous
+            # simulation. The location for the restart data is given by the placeholder
+            # <restartdir> in the namelists.
+            FileText = FileText.replace("<restartdir>", f"{RestartDir}")
 
+            # Open the target WriteFile and write the new namelist to it
+            with open(WriteFile, 'w+') as WriteTo:
                 # Write the new string to file
                 WriteTo.write(RunText)
 
 if __name__ == "__main__":
     # Prep the argument parser to read the command line arguments
     ArgParser = argparse.ArgumentParser(description = "Prepare the namelists to run a stage of a configuration.")
-    ArgParser.add_argument("NamelistDir", help = "Location of the base namelists.")
-    ArgParser.add_argument("TargetDir", help = "Directory of the current stage.")
-    ArgParser.add_argument("ConfigFile", help = "YAML file containing the modified config options.")
-    ArgParser.add_argument("Run", help = "The run ID of the job in the larger pseudo-parallel experiment.", type = int)
+    ArgParser.add_argument("StageName", help = "Where to write the results to.", type = str)
+    ArgParser.add_argument("RestartDir", nargs = '?', help = "Location of the previous stage.", type = str, default = "")
+    ArgParser.add_argument('-r', '--run', nargs = '?', dest = "Run", help = "The run ID in the pseudo-parallel run.", default = None)
+    ArgParser.add_argument('-c', '--cycle', nargs = '?', dest = "Cycle", help = "The cycle number in a multi-stage run.", default = None)
 
     args = ArgParser.parse_args()
 
-    BuildNamelists(args.NamelistDir, args.TargetDir, args.ConfigFile, args.Run)
-
+    BuildNamelists(args.StageName, args.RestartDir, args.Run, args.Cycle)
