@@ -2,14 +2,15 @@
 
 # biocomp
 #SBATCH --ignore-pbs
-#SBATCH --job-name=trendyS0
+#SBATCH --job-name=crunv12
 #SBATCH --output=%x-%j.out
 #SBATCH --error=%x-%j.out
 # #SBATCH --partition=short
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --time=12:30:00
+# ca. 25 hrs with 31 jobs on 1x1 grid
+#SBATCH --time=29:00:00
 #SBATCH --mem=4G
 #SBATCH --mail-type=FAIL,STAGE_OUT,TIME_LIMIT,INVALID_DEPEND,END
 #SBATCH --mail-user=matthias.cuntz@inrae.fr
@@ -50,49 +51,52 @@
 # --------------------------------------------------------------------
 # Load Modules
 # --------------------------------------------------------------------
-pdir=${isdir}
-. /etc/bashrc
-module purge
-module load intel-compiler/2021.5.0
-module load intel-mpi/2021.5.1
-module load netcdf/4.8.0
-export mpiexecdir=/apps/intel-mpi/2021.5.1/bin
-if [[ ! -z ${mpiexecdir} ]] ; then export mpiexecdir="${mpiexecdir}/" ; fi
+eval "$(${HOME}/miniconda3/bin/conda 'shell.bash' 'hook' 2> /dev/null)"
+conda activate pystd
 
 
-
-## ------------------------------------------------------------------
-## Basic settings (parsed through from wrapper script)
-## ------------------------------------------------------------------
+# --------------------------------------------------------------------
+# Basic settings (parsed through from wrapper script)
+# --------------------------------------------------------------------
 # TRENDY experiment (S0, S1, S2, S3, S4, S5, S6):     
-experiment='S0'
+experiment='S3'
 # Name of the experiment (= name of output folder)     
-experiment_name='S0'
+experiment_name='FR-Hes'
 # Code directory
-cablecode='/home/564/lw5085/CABLE'
+cablecode='/home/mcuntz/prog/github/cable/cable'
 # Script directory
-rundir='/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/TRENDY'
+rundir='/home/mcuntz/prog/github/cable/trendy_v12'
 # Data directory
-datadir='/g/data/rp23/data/no_provenance/'
+datadir='/home/mcuntz/data'
 # Cable executable
-exe='/home/564/lw5085/CABLE/offline/cable'
-# Global Meteorology
-MetPath='/g/data/rp23/data/no_provenance//met_forcing/crujra_1x1_1d/v2.4'
+exe='/home/mcuntz/prog/github/cable/cable/offline/cable'
 # MetVersion
 MetVersion='CRUJRA_2023'
-# Global LUC
-TransitionFilePath='/g/data/rp23/data/no_provenance//luc/LUH2_GCB_1x1/v2023'
 # Global Surface file 
-SurfaceFile='/g/data/rp23/data/no_provenance//gridinfo/gridinfo_CSIRO_1x1.nc'
+SurfaceFile='/home/mcuntz/data/cable/CABLE-AUX/offline/gridinfo_CSIRO_1x1.nc'
 # Output directory of the run
-runpath='/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/TRENDY/S0/run100'
+runpath="/home/mcuntz/projects/cable/sites/${experiment_name}"
+
+# Using Global Meteorology
+# Global Meteorology
+MetPath='/home/mcuntz/data/met_forcing/CRUJRA2023/daily_1deg'
+# Global LUC
+TransitionFilePath='/home/mcuntz/data/cable/LUH2/GCB_2023/1deg/EXTRACT'
 # Land Mask used for this run
-LandMaskFile='/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/TRENDY/S0/run100/landmask/landmask100.nc'
+LandMaskFile="/home/mcuntz/projects/cable/sites/${experiment_name}/landmask_${experiment_name}.nc"
+
+# # Using Local Meteorology
+# # Local Meteorology
+# MetPath="/home/mcuntz/projects/cable/sites/${experiment_name}/met"
+# # Local LUC
+# TransitionFilePath="/home/mcuntz/projects/cable/sites/${experiment_name}/luh"
+# # Land Mask used for this run
+# LandMaskFile="/home/mcuntz/projects/cable/sites/${experiment_name}/mask/landmask_${experiment_name}.nc"
 
 
-## ----------------------------------------------------------------
-## Run Sequence
-## ----------------------------------------------------------------
+# --------------------------------------------------------------------
+# Run Sequence
+# --------------------------------------------------------------------
 doclimate=1     # 1/0: Do/Do not create climate restart file
 dofromzero=1    # 1/0  Do/Do not first spinup phase from zero biomass stocks
 doequi1=1       # 1/0: Do/Do not bring biomass stocks into quasi-equilibrium with unrestricted P and N pools
@@ -110,16 +114,16 @@ dofinal=1       # 1/0: Do/Do not final run from 1901 to 2022
     
 purge_restart=0  # Delete all restart files?
 
-## ----------------------------------------------------------------
-## CABLE Settings
-## ----------------------------------------------------------------
+
+# --------------------------------------------------------------------
+# CABLE Settings
+# --------------------------------------------------------------------
 # MetType
 mettype="cru"       # "cru", "plume", "bios"
 # Cable 
 read_fdiff=1        # 1/0: do/do not read in diffuse radiation fraction
 call_blaze=0        # 1/0: do/do not call BLAZE
 explicit_gm=0       # 1/0: explicit (finite) or implicit mesophyll conductance
-use_LUTgm=1         # 1/0: Do/Do not use lookup table for parameter conversion accounting for gm (only used if explicit_gm=1)
 Rubisco_params="Bernacchi_2002"   # "Bernacchi_2002" or "Walker_2013"
 coordinate_photosyn=1 # 1/0: Do/Do not coordinate photosynthesis
 coord=F               # T/F: version of photosyn. optimisation (optimised(F) or forced (T))
@@ -129,25 +133,24 @@ doc13o2=0           # 1/0: Do/Do not calculate 13C
 c13o2_simple_disc=0 # 1/0: simple or full 13C leaf discrimination
 # Parameter files
 namelistpath="${rundir}/namelists"
-filename_veg="${datadir}/parameter/def_veg_params.txt"
-filename_soil="${datadir}/parameter/def_soil_params.txt"
-casafile_cnpbiome="${datadir}/parameter/pftlookup.csv"
+filename_veg='/home/mcuntz/prog/github/cable/cable/params/v12/def_veg_params.txt'
+filename_soil='/home/mcuntz/prog/github/cable/cable/params/v12/def_soil_params.txt'
+casafile_cnpbiome='/home/mcuntz/prog/github/cable/cable/params/v12/pftlookup.csv'
 # Climate restart file 
 # changes for TRENDY >= v11: ClimateFile always created!
 # ClimateFile="/g/data/x45/ipbes/cable_climate/ipsl_climate_rst_glob_1deg.nc"
 #ClimateFile="$(dirname ${runpath})/climate_restart/cru_climate_rst.nc"
 ClimateFile="${runpath}/cru_climate_rst.nc"
 # gm lookup tables
-gm_lut_bernacchi_2002="${datadir}/parameter/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc"
-gm_lut_walker_2013="${datadir}/parameter/gm_LUT_351x3601x7_1pt8245_Walker2013.nc"
+gm_lut_bernacchi_2002='/home/mcuntz/prog/github/cable/cable/params/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc'
+gm_lut_walker_2013='/home/mcuntz/prog/github/cable/cable/params/gm_LUT_351x3601x7_1pt8245_Walker2013.nc'
 # 13C
-filename_d13c_atm="${datadir}/parameter/graven_et_al_gmd_2017-table_s1-delta_13c-1700-2025.txt"
+filename_d13c_atm='/home/mcuntz/prog/github/cable/cable/params/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc'
 
 
 # --------------------------------------------------------------------
 # Setup and Functions
 # --------------------------------------------------------------------
-
 set -e
 
 trap cleanup 1 2 3 6
@@ -181,9 +184,9 @@ function cleanup()
 }
 
 
-# ---------------------------------------------------------------------------------
+# --------------------------------------------------------------------
 # Preparation
-# ---------------------------------------------------------------------------------
+# --------------------------------------------------------------------
 # Get options
 while getopts "h" option ; do
     case ${option} in
@@ -196,7 +199,6 @@ shift $((${OPTIND} - 1))
 # get directories
 pdir=$(abspath ${pdir})
 cd ${pdir}
-exe='/home/564/lw5085/CABLE/offline/cable'
 mkdir -p ${runpath}
 rdir=$(abspath ${runpath})
 ndir=$(abspath ${namelistpath})
@@ -210,6 +212,10 @@ cp ${exe} ./
 iexe=$(basename ${exe})
 cd ${pdir}
 
+# OS and Workload manager
+ised="sed --in-place=.old"  # Linux: "sed --in-place=.old" ; macOS/Unix: "sed -i .old"
+
+
 # --------------------------------------------------------------------
 # Print Info
 # --------------------------------------------------------------------
@@ -218,11 +224,7 @@ printf "Started at %s\n" "$(date)"
 
 printf "\nSetup\n"
 printf "    Sequence\n"
-printf "        imeteo=${imeteo}\n"
-printf "        doextractsite=${doextractsite}\n"
-printf "            experiment=${experiment}\n"
-printf "            randompoints=${randompoints}\n"
-printf "            latlon=${latlon}\n"
+printf "        experiment=${experiment}\n"
 printf "        doclimate=${doclimate}\n"
 printf "        dofromzero=${dofromzero}\n"
 printf "        doequi1=${doequi1}\n"
@@ -232,14 +234,10 @@ printf "            nequi2=${nequi2}\n"
 printf "        doiniluc=${doiniluc}\n"
 printf "        doinidyn=${doinidyn}\n"
 printf "        dofinal=${dofinal}\n"
-printf "        dofuture=${dofuture}\n"
 printf "\n"
 printf "    Options\n"
 printf "        mettype=${mettype}\n"
-printf "        metmodel=${metmodel}\n"
-printf "        RCP=${RCP}\n"
 printf "        explicit_gm=${explicit_gm}\n"
-printf "        use_LUTgm=${use_LUTgm}\n"
 printf "        Rubisco_params=${Rubisco_params}\n"
 printf "        coordinate_photosyn=${coordinate_photosyn}\n"
 printf "        coord=${coord}\n"
@@ -249,12 +247,11 @@ printf "        doc13o2=${doc13o2}\n"
 printf "        c13o2_simple_disc=${c13o2_simple_disc}\n"
 printf "\n"
 printf "    Directories\n"
-printf "        sitepath=${sitepath}\n"
 printf "        rundir=${rundir}\n"
+printf "        runpath=${runpath}\n"
 printf "        exe=${exe}\n"
 printf "        LandMaskFile=${LandMaskFile}\n"
 printf "        SurfaceFile=${SurfaceFile}\n"
-printf "        runpath=${runpath}\n"
 printf "        namelistpath=${namelistpath}\n"
 printf "        filename_veg=${filename_veg}\n"
 printf "        filename_soil=${filename_soil}\n"
@@ -270,11 +267,11 @@ printf "\n"
 
 
 
-# ------------------------------------------------------------------------------------
+# --------------------------------------------------------------------
 # Write global namelists
-# ------------------------------------------------------------------------------------
-# Write standard namelists with options that are common to all steps of the sequence.
-# They can, however, be overwritten in later steps.
+# --------------------------------------------------------------------
+# Write standard namelists with options that are common to all steps
+# of the sequence. They can, however, be overwritten in later steps.
 
 # global meteo namelist file
 if [[ ${read_fdiff} -eq 1 ]] ; then
@@ -282,7 +279,6 @@ if [[ ${read_fdiff} -eq 1 ]] ; then
 else
     fdiff_bool=.false.
 fi
-
 
 cat > ${tmp}/sedtmp.${pid} << EOF
     BasePath     = "${MetPath}"
@@ -294,7 +290,6 @@ cat > ${tmp}/sedtmp.${pid} << EOF
 EOF
 applysed ${tmp}/sedtmp.${pid} ${ndir}/cru.nml ${rdir}/cru_${experiment}.nml
 
-
 # global landuse change namelist
 cat > ${tmp}/sedtmp.${pid} << EOF
     TransitionFilePath = "${TransitionFilePath}"
@@ -303,7 +298,6 @@ cat > ${tmp}/sedtmp.${pid} << EOF
     YearEnd            = 2022
 EOF
 applysed ${tmp}/sedtmp.${pid} ${ndir}/luc.nml ${rdir}/luc_${experiment}.nml
-
 
 # global Cable namelist
 if [[ "${Rubisco_params}" == "Bernacchi_2002" ]] ; then
@@ -360,45 +354,45 @@ cat > ${tmp}/sedtmp.${pid} << EOF
     cable_user%c13o2_restart_out_luc   = "restart/${mettype}_c13o2_luc_rst.nc"
 EOF
 if [[ ${call_pop} -eq 1 ]] ; then
-    sed -i -e "/cable_user%CALL_POP/s/=.*/= .true./" ${tmp}/sedtmp.${pid}
+    ${ised} -e "/cable_user%CALL_POP/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
 fi
 if [[ ${coordinate_photosyn} -eq 1 ]] ; then
-    sed -i -e "/cable_user%coordinate_photosyn/s/=.*/= .true./" ${tmp}/sedtmp.${pid}
+    ${ised} -e "/cable_user%coordinate_photosyn/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
 fi
 if [[ ${acclimate_photosyn} -eq 1 ]] ; then
-    sed -i -e "/cable_user%acclimate_photosyn/s/=.*/= .true./" ${tmp}/sedtmp.${pid}
+    ${ised} -e "/cable_user%acclimate_photosyn/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
 fi
 if [[ ${explicit_gm} -eq 1 ]] ; then
-    sed -i -e "/cable_user%explicit_gm/s/=.*/= .true./" ${tmp}/sedtmp.${pid}
+    ${ised} -e "/cable_user%explicit_gm/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
 fi
 if [[ ${doc13o2} -eq 1 ]] ; then
-    sed -i -e "/cable_user%c13o2/s/=.*/= .true./" ${tmp}/sedtmp.${pid}
+    ${ised} -e "/cable_user%c13o2/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
     if [[ ${c13o2_simple_disc} -eq 1 ]] ; then
-        sed -i -e "/cable_user%c13o2_simple_disc/s/=.*/= .true./" ${tmp}/sedtmp.${pid}
+        ${ised} -e "/cable_user%c13o2_simple_disc/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
     fi
 fi
 if [[ ${call_blaze} -eq 1 ]] ; then
-    sed -i -e "cable_user%CALL_BLAZE/s/=.*/= .true./" ${tmp}/sedtmp.${pid}
+    ${ised} -e "/cable_user%CALL_BLAZE/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
 fi
 applysed ${tmp}/sedtmp.${pid} ${ndir}/cable.nml ${rdir}/cable_${experiment}.nml
+irm ${tmp}/sedtmp.${pid}.old
 
-
-## BLAZE (no changes at the moment)
+# BLAZE (no changes at the moment)
 if [[ ${call_blaze} -eq 1 ]] ; then
     cp ${ndir}/blaze.nml ${rdir}/blaze.nml
 fi
 
 
-# -----------------------------------------------------------------------
-# -----------------------------------------------------------------------
+# --------------------------------------------------------------------
+# --------------------------------------------------------------------
 # Start Runs according to sequence specified above
-# -----------------------------------------------------------------------
-# -----------------------------------------------------------------------
+# --------------------------------------------------------------------
+# --------------------------------------------------------------------
 
 # delete all restart files if required
 if [[ ${purge_restart} -eq 1 ]] ; then
     rm -f ${rdir}/restart/*
-    #rm -f ${ClimateFile}
+    # rm -f ${ClimateFile}
 fi
 
 # --------------------------------------------------------------------
@@ -436,30 +430,14 @@ if [[ ${doclimate} -eq 1 ]] ; then
         cable_user%POPLUC_RunType      = "static"
         cable_user%c13o2               = .false.
 EOF
-    echo "1"
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
     # run model
     cd ${rdir}
-    echo "2"
     irm logs/log_cable.txt logs/log_out_cable.txt
-    echo "2.5"
-    #valgrind --tool=massif --xtree-memory=full --pages-as-heap=yes ./${iexe} > logs/log_out_cable.txt
+    # valgrind --tool=massif --xtree-memory=full --pages-as-heap=yes ./${iexe} > logs/log_out_cable.txt
     ./${iexe} > logs/log_out_cable.txt
-    echo "3"
-    # save output
-    renameid ${rid} ${mettype}.nml luc.nml cable.nml
-    imv *_${rid}.nml restart/
-    echo "4"
-    cd logs
-    renameid ${rid} log_cable.txt log_out_cable.txt
-    cd ../restart
-    copyid ${rid} ${mettype}_climate_rst.nc
-    cp ${mettype}_climate_rst.nc ${ClimateFile}  # new for TRENDY >= v11   
-    echo "5"
-    cd ../outputs
-    renameid ${rid} ${mettype}_out_cable.nc ${mettype}_out_casa.nc
-    echo "6"
-    cd ..
+    cp restart/${mettype}_climate_rst.nc ${ClimateFile}  # new for TRENDY >= v11
+    saveid ${rid} ${mettype} ${doc13o2}
     cd ${pdir}
 fi
 
@@ -477,6 +455,7 @@ if [[ ${dofromzero} -eq 1 ]] ; then
 
     # LUC
     cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+
     # Cable
     cat > ${tmp}/sedtmp.${pid} << EOF
         filename%restart_in               = ""
@@ -506,22 +485,9 @@ EOF
     # run model
     cd ${rdir}
     irm logs/log_cable.txt logs/log_out_cable.txt
-    #valgrind --tool=massif --xtree-memory=full --pages-as-heap=yes ./${iexe} > logs/log_out_cable.txt
+    # valgrind --tool=massif --xtree-memory=full --pages-as-heap=yes ./${iexe} > logs/log_out_cable.txt
     ./${iexe} > logs/log_out_cable.txt
-    # save output
-    renameid ${rid} ${mettype}.nml luc.nml cable.nml
-    imv *_${rid}.nml restart/
-    cd logs
-    renameid ${rid} log_cable.txt log_out_cable.txt
-    cd ../restart
-    copyid ${rid} ${mettype}_climate_rst.nc ${mettype}_cable_rst.nc pop_${mettype}_ini.nc
-    copyid ${rid} ${mettype}_casa_biome_rst.nc ${mettype}_casa_met_rst.nc ${mettype}_casa_pool_rst.nc ${mettype}_casa_phen_rst.nc
-    copyid ${rid} ${mettype}_casa_flux_rst.nc ${mettype}_casa_bal_rst.nc
-    if [[ ${doc13o2} -eq 1 ]] ; then copyid ${rid} ${mettype}_c13o2_flux_rst.nc ${mettype}_c13o2_pools_rst.nc ; fi
-    cd ../outputs
-    renameid ${rid} ${mettype}_out_cable.nc ${mettype}_out_casa.nc
-    if [[ ${doc13o2} -eq 1 ]] ; then renameid ${rid} ${mettype}_out_casa_c13o2.nc ; fi
-    cd ..
+    saveid ${rid} ${mettype} ${doc13o2}
     cd ${pdir}
 fi
 
@@ -537,11 +503,12 @@ if [[ ${doequi1} -eq 1 ]] ; then
         rid="spinup_limit_labile_${iequi1}"
         # rid="spinup_limit_labile${iequi}"
 
-	    # Met forcing
+	# Met forcing
         cp ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
 
         # LUC
         cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+
         # Cable
         cat > ${tmp}/sedtmp.${pid} << EOF
             cable_user%CLIMATE_fromZero    = .false.
@@ -565,20 +532,7 @@ EOF
         cd ${rdir}
         irm logs/log_cable.txt logs/log_out_cable.txt
         ./${iexe} > logs/log_out_cable.txt
-        # save output
-        renameid ${rid} ${mettype}.nml luc.nml cable.nml
-        mv *_${rid}.nml restart/
-        cd logs
-        renameid ${rid} log_cable.txt log_out_cable.txt
-        cd ../restart
-        copyid ${rid} ${mettype}_climate_rst.nc ${mettype}_cable_rst.nc pop_${mettype}_ini.nc
-	copyid ${rid} ${mettype}_casa_biome_rst.nc ${mettype}_casa_met_rst.nc ${mettype}_casa_pool_rst.nc ${mettype}_casa_phen_rst.nc
-        copyid ${rid} ${mettype}_casa_flux_rst.nc ${mettype}_casa_bal_rst.nc
-        if [[ ${doc13o2} -eq 1 ]] ; then copyid ${rid} ${mettype}_c13o2_flux_rst.nc ${mettype}_c13o2_pools_rst.nc ; fi
-        cd ../outputs
-        renameid ${rid} ${mettype}_out_cable.nc ${mettype}_out_casa.nc
-	if [[ ${doc13o2} -eq 1 ]] ; then renameid ${rid} ${mettype}_out_casa_c13o2.nc ; fi
-        cd ..
+	saveid ${rid} ${mettype} ${doc13o2}
         cd ${pdir}
 	
         #
@@ -616,44 +570,30 @@ EOF
         cd ${rdir}
         irm logs/log_cable.txt logs/log_out_cable.txt
         ./${iexe} > logs/log_out_cable.txt
-        # save output
-        renameid ${rid} ${mettype}.nml luc.nml cable.nml
-        mv *_${rid}.nml restart/
-        cd logs
-        renameid ${rid} log_cable.txt log_out_cable.txt
-        cd ../restart
-        copyid ${rid} pop_${mettype}_ini.nc
-	    copyid ${rid} ${mettype}_casa_biome_rst.nc ${mettype}_casa_met_rst.nc ${mettype}_casa_pool_rst.nc ${mettype}_casa_phen_rst.nc
-        copyid ${rid} ${mettype}_casa_flux_rst.nc ${mettype}_casa_bal_rst.nc
-        if [[ ${doc13o2} -eq 1 ]] ; then copyid ${rid} ${mettype}_c13o2_flux_rst.nc ${mettype}_c13o2_pools_rst.nc ; fi
-        #cd ../outputs
-        #renameid ${rid} ${mettype}_out_casa.nc
-        #if [[ ${doc13o2} -eq 1 ]] ; then renameid ${rid} ${mettype}_out_casa_c13o2.nc ; fi
-        #cd ..
+	saveid ${rid} ${mettype} ${doc13o2}
         cd ${pdir}
     done
 fi
 
 
-
-# ------------------------------------------------------------------------
+# --------------------------------------------------------------------
 # 4. Biomass into quasi-equilibrium without restricted N and P pools
-# ------------------------------------------------------------------------
+# --------------------------------------------------------------------
 if [[ ${doequi2} -eq 1 ]] ; then
     echo "4. Bring biomass into quasi-equilibrium with restricted N and P pools"
     for ((iequi2=1; iequi2<=${nequi2}; iequi2++)) ; do
         # 4a. 30 year run starting from restart files
         echo "   4a. 30 year spinup from accumulated biomass; iequi2=${iequi2}/${nequi2}"
-        #rid="spinup_nutrient_limited"
+        # rid="spinup_nutrient_limited"
         rid="spinup_nutrient_limited_${iequi2}"
 
-	    # Met forcing
+	# Met forcing
         cp ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
 
-	    # LUC
-	    cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+	# LUC
+	cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
 
-	    # Cable
+	# Cable
         cat > ${tmp}/sedtmp.${pid} << EOF
             cable_user%CLIMATE_fromZero    = .false.
             cable_user%YearStart           = 1841
@@ -677,34 +617,21 @@ EOF
         cd ${rdir}
         irm logs/log_cable.txt logs/log_out_cable.txt
         ./${iexe} > logs/log_out_cable.txt
-        # save output
-        renameid ${rid} ${mettype}.nml luc.nml cable.nml
-        mv *_${rid}.nml restart/
-        cd logs
-        renameid ${rid} log_cable.txt log_out_cable.txt
-        cd ../restart
-        copyid ${rid} ${mettype}_climate_rst.nc ${mettype}_cable_rst.nc pop_${mettype}_ini.nc
-	    copyid ${rid} ${mettype}_casa_biome_rst.nc ${mettype}_casa_met_rst.nc ${mettype}_casa_pool_rst.nc ${mettype}_casa_phen_rst.nc
-        copyid ${rid} ${mettype}_casa_flux_rst.nc ${mettype}_casa_bal_rst.nc
-        if [[ ${doc13o2} -eq 1 ]] ; then copyid ${rid} ${mettype}_c13o2_flux_rst.nc ${mettype}_c13o2_pools_rst.nc ; fi
-        cd ../outputs
-        renameid ${rid} ${mettype}_out_cable.nc ${mettype}_out_casa.nc
-	    if [[ ${doc13o2} -eq 1 ]] ; then renameid ${rid} ${mettype}_out_casa_c13o2.nc ; fi
-        cd ..
+	saveid ${rid} ${mettype} ${doc13o2}
         cd ${pdir}
-	
 
+	#
         # 4b. analytic quasi-equilibrium of biomass pools
         if [[ ${iequi2} -le ${nequi2a} ]] ; then        
             echo "   4b. Analytic solution of biomass pools"
-            #rid="spinup_analytic"
+            # rid="spinup_analytic"
             rid="spinup_analytic_${iequi2}"
             # Met forcing
             cp ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
 
             # LUC
             cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
-            #applysed ${tmp}/sedtmp.${pid} ${rdir}/LUC_${experiment}.nml ${rdir}/LUC.nml
+            # applysed ${tmp}/sedtmp.${pid} ${rdir}/LUC_${experiment}.nml ${rdir}/LUC.nml
 
             # Cable
             cat > ${tmp}/sedtmp.${pid} << EOF
@@ -729,22 +656,7 @@ EOF
             cd ${rdir}
             irm logs/log_cable.txt logs/log_out_cable.txt
             ./${iexe} > logs/log_out_cable.txt
-            # save output
-            renameid ${rid} ${mettype}.nml luc.nml cable.nml
-            mv *_${rid}.nml restart/
-            cd logs
-            renameid ${rid} log_cable.txt log_out_cable.txt
-            cd ../restart
-            copyid ${rid} ${mettype}_cable_rst.nc pop_${mettype}_ini.nc
-	        copyid ${rid} ${mettype}_casa_biome_rst.nc ${mettype}_casa_met_rst.nc ${mettype}_casa_pool_rst.nc ${mettype}_casa_phen_rst.nc
-            copyid ${rid} ${mettype}_casa_flux_rst.nc ${mettype}_casa_bal_rst.nc
-            if [[ ${doc13o2} -eq 1 ]] ; then copyid ${rid} ${mettype}_c13o2_flux_rst.nc ${mettype}_c13o2_pools_rst.nc ; fi
-            #if [[ ${dompi} -eq 0 ]] ; then # no output only restart if MPI
-            #    cd ../outputs
-            #    renameid ${rid} ${mettype}_out_casa.nc
-	        #if [[ ${doc13o2} -eq 1 ]] ; then renameid ${rid} ${mettype}_out_casa_c13o2.nc ; fi
-            #    cd ..
-            #fi
+	    saveid ${rid} ${mettype} ${doc13o2}
             cd ${pdir}
         fi
     done
@@ -756,12 +668,12 @@ fi
 # --------------------------------------------------------------------
 if [[ ${doiniluc} -eq 1 ]] ; then
     echo "5. First dynamic land use (initialise land use)"
+    rid="init_land_use"
 
     # Met forcing
-    YearStart=1580  # should be the same as in the global luc.nml file!!
+    YearStart=1580  # should be the same as in the global luc.nml file!
     YearEnd=1699
     cp ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
-    rid="init_land_use"
     
     # LUC
     cat > ${tmp}/sedtmp.${pid} << EOF
@@ -797,25 +709,9 @@ EOF
     cd ${rdir}
     irm logs/log_cable.txt logs/log_out_cable.txt
     ./${iexe} > logs/log_out_cable.txt
-    # save output
-    renameid ${rid} ${mettype}.nml luc.nml cable.nml
-    mv *_${rid}.nml restart/
-    cd logs
-    renameid ${rid} log_cable.txt log_out_cable.txt
-    cd ../restart
-    #copyid ${rid} ${mettype}_cable_rst.nc ${mettype}_casa_rst.nc ${mettype}_LUC_rst.nc pop_${mettype}_ini.nc
-    copyid ${rid} ${mettype}_LUC_rst.nc pop_${mettype}_ini.nc
-    copyid ${rid} ${mettype}_casa_biome_rst.nc ${mettype}_casa_met_rst.nc ${mettype}_casa_pool_rst.nc ${mettype}_casa_phen_rst.nc
-    copyid ${rid} ${mettype}_casa_flux_rst.nc ${mettype}_casa_bal_rst.nc
-    if [[ ${doc13o2} -eq 1 ]] ; then copyid ${rid} ${mettype}_c13o2_pools_rst.nc ${mettype}_c13o2_luc_rst.nc ; fi
-    cd ../outputs
-    #renameid ${rid} ${mettype}_out_LUC.nc ${mettype}_out_casa.nc ${mettype}_out_cable.nc
-    renameid ${rid} ${mettype}_out_LUC.nc ${mettype}_out_casa.nc
-    if [[ ${doc13o2} -eq 1 ]] ; then renameid ${rid} ${mettype}_out_casa_c13o2.nc ; fi
-    cd ..
+    saveid ${rid} ${mettype} ${doc13o2}
     cd ${pdir}
 fi
-
 
 
 # --------------------------------------------------------------------
@@ -825,8 +721,9 @@ if [[ ${doinidyn} -eq 1 ]] ; then
     echo "6. Transient run (full dynamic spinup)"
 
     # Met forcing
-	YearStart=1700
-	YearEnd=1900
+    YearStart=1700
+    YearEnd=1900
+    rid=${YearStart}_${YearEnd}
 	         
     if [[ "${experiment}" == "S0" ]] ; then
         cat > ${tmp}/sedtmp.${pid} << EOF
@@ -838,8 +735,6 @@ EOF
 EOF
     fi	
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
-    rid=${YearStart}_${YearEnd}
-
     
     # LUC
     if [[ "${experiment}" == "S3" ]] ; then
@@ -854,11 +749,10 @@ EOF
 EOF
     fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
-
     
     # Cable
     if [[ "${experiment}" == "S3" ]] ; then
-	    POPLUC_RunType="restart"
+	POPLUC_RunType="restart"
     else
         POPLUC_RunType="static"
     fi
@@ -885,24 +779,9 @@ EOF
     cd ${rdir}
     irm logs/log_cable.txt logs/log_out_cable.txt
     ./${iexe} > logs/log_out_cable.txt
-    # save output
-    renameid ${rid} ${mettype}.nml luc.nml cable.nml
-    mv *_${rid}.nml restart/
-    cd logs
-    renameid ${rid} log_cable.txt log_out_cable.txt
-    cd ../restart
-    copyid ${rid} ${mettype}_climate_rst.nc ${mettype}_cable_rst.nc
-    copyid ${rid} ${mettype}_LUC_rst.nc pop_${mettype}_ini.nc
-    copyid ${rid} ${mettype}_casa_biome_rst.nc ${mettype}_casa_met_rst.nc ${mettype}_casa_pool_rst.nc ${mettype}_casa_phen_rst.nc
-    copyid ${rid} ${mettype}_casa_flux_rst.nc ${mettype}_casa_bal_rst.nc
-    if [[ ${doc13o2} -eq 1 ]] ; then copyid ${rid} ${mettype}_c13o2_flux_rst.nc ${mettype}_c13o2_pools_rst.nc ${mettype}_c13o2_luc_rst.nc ; fi
-    cd ../outputs
-    renameid ${rid} ${mettype}_out_cable.nc ${mettype}_out_casa.nc ${mettype}_out_LUC.nc
-    if [[ ${doc13o2} -eq 1 ]] ; then renameid ${rid} ${mettype}_out_casa_c13o2.nc ; fi
-    cd ..
+    saveid ${rid} ${mettype} ${doc13o2}
     cd ${pdir}
 fi
-
 
 
 # --------------------------------------------------------------------
@@ -914,6 +793,8 @@ if [[ ${dofinal} -eq 1 ]] ; then
     # Met forcing
     YearStart=1901
     YearEnd=2022
+    rid=${YearStart}_${YearEnd}
+
     if [[ "${experiment}" == "S0" ]] ; then
         cat > ${tmp}/sedtmp.${pid} << EOF
             Run = "S0_TRENDY"
@@ -928,8 +809,6 @@ EOF
 EOF
     fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
-    rid=${YearStart}_${YearEnd}
-
     
     # LUC
     if [[ "${experiment}" == "S3" ]] ; then
@@ -944,11 +823,10 @@ EOF
 EOF
     fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
-
     
     # Cable
     if [[ "${experiment}" == "S3" ]] ; then
-	    POPLUC_RunType="restart"
+	POPLUC_RunType="restart"
     else
         POPLUC_RunType="static"
     fi
@@ -975,30 +853,14 @@ EOF
     cd ${rdir}
     irm logs/log_cable.txt logs/log_out_cable.txt
     ./${iexe} > logs/log_out_cable.txt
-    # save output
-    renameid ${rid} ${mettype}.nml luc.nml cable.nml
-    mv *_${rid}.nml restart/
-    cd logs
-    renameid ${rid} log_cable.txt log_out_cable.txt
-    cd ../restart
-    copyid ${rid} ${mettype}_climate_rst.nc ${mettype}_cable_rst.nc
-    copyid ${rid} ${mettype}_LUC_rst.nc pop_${mettype}_ini.nc
-    copyid ${rid} ${mettype}_casa_biome_rst.nc ${mettype}_casa_met_rst.nc ${mettype}_casa_pool_rst.nc ${mettype}_casa_phen_rst.nc
-    copyid ${rid} ${mettype}_casa_flux_rst.nc ${mettype}_casa_bal_rst.nc
-    if [[ ${doc13o2} -eq 1 ]] ; then copyid ${rid} ${mettype}_c13o2_flux_rst.nc ${mettype}_c13o2_pools_rst.nc ${mettype}_c13o2_luc_rst.nc ; fi
-    cd ../outputs
-    renameid ${rid} ${mettype}_out_cable.nc ${mettype}_out_casa.nc ${mettype}_out_LUC.nc
-    if [[ ${doc13o2} -eq 1 ]] ; then renameid ${rid} ${mettype}_out_casa_c13o2.nc ; fi
-    cd ..
+    saveid ${rid} ${mettype} ${doc13o2}
     cd ${pdir}
 fi
-
 
 
 # --------------------------------------------------------------------
 # Finish
 # --------------------------------------------------------------------
-
 cd ${isdir}
 
 t2=$(date +%s)

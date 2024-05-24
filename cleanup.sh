@@ -14,27 +14,39 @@
 #SBATCH --mail-type=FAIL,STAGE_OUT,TIME_LIMIT,INVALID_DEPEND,END
 #SBATCH --mail-user=matthias.cuntz@inrae.fr
 
-exp_name="TRENDY_S0"
-outpath="${HOME}/projects/cable/${exp_name}"
-nruns=100
+exp_name='S3'
+outpath='/home/mcuntz/projects/cable/trendy_v12'
+nruns=31
 climate_restart='cru_climate_rst'
-keep_dump=1
+keep_dump=0
 mergesteps='1700_1900 1901_2022'
 
+# Info
+echo ""
+echo "Cleaning ${exp_name}"
+echo "in path ${outpath}"
+echo "Keeping dump: ${keep_dump}"
+echo "for steps: ${mergesteps}"
+echo ""
+
 # executable
+echo "Move executable"
 mkdir -p ${outpath}/exe
 mv ${outpath}/run1/cable ${outpath}/exe/
 
 # job files
+echo "Move job output files"
 mkdir -p ${outpath}/job
 mv ${PWD}/${exp_name}.o* ${outpath}/job/
 
+echo "Move restart files, logs, landmasks, and dump files"
+echo "Delete run directories"
 for ((irun=1; irun<=${nruns}; irun++)) ; do
-    # Restart files (includes namelists)
+    # Restart files (incl. namelists)
     mkdir -p ${outpath}/restart/run${irun}
     mv ${outpath}/run${irun}/restart/* ${outpath}/restart/run${irun}/
 
-    # Climate restart
+    # Climate restart file
     mkdir -p ${outpath}/climate_restart
     mv ${outpath}/run${irun}/${climate_restart}.nc ${outpath}/climate_restart/${climate_restart}${irun}.nc
 
@@ -55,3 +67,7 @@ for ((irun=1; irun<=${nruns}; irun++)) ; do
     # delete all the rest
     rm -r ${outpath}/run${irun}/
 done
+
+echo "Finished cleaning ${exp_name}"
+
+exit

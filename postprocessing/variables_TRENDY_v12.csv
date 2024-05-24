@@ -1,4 +1,4 @@
-longname,name_TRENDY ,name_CABLE,file,units_TRENDY,units_CABLE,conversion_factor,priority,additional_dimensions,missval,frequency,type,Comments_file_attribute,Comments_other,Changes_v11,New_v12
+longname,name_TRENDY,name_CABLE,file,units_TRENDY,units_CABLE,conversion_factor,priority,additional_dimensions,missval,frequency,type,Comments_file_attribute,Comments_other,Changes_v11,New_v12
 Near-Surface Air Temperature,tas,Tair,cable,K,K,,1,,-99999,monthly,physical,,,,
 Precipitation,pr,Rainf,cable,kg m-2 s-1,kg m-2 s-1,,1,,-99999,monthly,physical,,,,
 Surface Downwelling Shortwave Radiation,rsds,SWdown,cable,W m-2,W m-2,,1,,-99999,monthly,physical,,,,

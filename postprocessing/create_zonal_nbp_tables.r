@@ -1,6 +1,10 @@
 #!/usr/bin/env Rscript
 
-library(ncdf4)
+## library(ncdf4)
+packages <- c('ncdf4')
+install.packages(setdiff(packages, rownames(installed.packages())),
+                 repos='https://cran.irsn.fr/')
+dum <- lapply(packages, library, character.only=TRUE)
 
 model     <- commandArgs(trailingOnly = TRUE)[1]
 exp       <- commandArgs(trailingOnly = TRUE)[2]
