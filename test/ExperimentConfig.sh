@@ -16,8 +16,8 @@ EXTENT="global"                     # Extent of the landmask- "global" or
 # Options for the stages. This controls how many times to run each stage, the name of the configuration files for each stage and the possible components of each stage.
 # The entries in RUN_FLAGS, REPEATS_PER_STAGE and STAGE_NAMES are correlated, and these
 # arrays must be the same length.
-REPEATS_PER_STAGE=(1 1 1 1 15 1 15)     # How many times to run each stage
-STAGE_NAMES=("climate_spinup" "zero_biomass" "unrestricted_NP,analytic_unrestricted_NP" "restricted_NP,analytic_unrestricted_NP")
+CYCLES_PER_STAGE=(1 1 5 3 1 1 1)     # How many times to run each stage
+STAGE_NAMES=("climate_spinup" "zero_biomass" "unrestricted_N_P,unrestricted_N_P_analytic" "restricted_N_P,restricted_N_P_analytic" "dynamic_land_use" "full_dynamic_spinup" "centennial_run")
 
 # The STAGE_NAMES controls both the names of the configuration files for each stage, and 
 # the components of each stage. The stages are seperated by spaces, while sub-steps within a stage are separated by commas.

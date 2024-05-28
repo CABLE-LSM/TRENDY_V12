@@ -1,0 +1,18 @@
+cable:
+  cable_user%CLIMATE_fromZero    : .false.
+  cable_user%YearStart           : 1841
+  cable_user%YearEnd             : 1860
+  icycle                         : 12
+  spincasa                       : .true.
+  cable_user%CASA_fromZero       : .false.
+  cable_user%CASA_DUMP_READ      : .true.
+  cable_user%CASA_DUMP_WRITE     : .false.
+  cable_user%CASA_SPIN_STARTYEAR : 1841
+  cable_user%CASA_SPIN_ENDYEAR   : 1860
+  cable_user%limit_labile        : .false.
+  cable_user%POP_fromZero        : .false.
+  cable_user%POP_out             : "ini"
+  cable_user%POPLUC              : .true.
+  cable_user%POPLUC_RunType      : "static"
+luc:
+cru:

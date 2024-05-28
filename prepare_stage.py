@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Author: Lachlan Whyborn
-# Last Modified: Fri 24 May 2024 08:56:26 PM AEST
+# Last Modified: Tue 28 May 2024 14:28:04
 
 import argparse
 import yaml
@@ -45,13 +45,14 @@ def BuildNamelists(StageName, RestartDir, Run, Cycle):
 
     # Build the target directory which will be the location the stage is run from
     # If Run and Cycle are not none, append them to the path
-    TargetDir = os.getcwd() + StageName
-    TargetDir = TargetDir + f"/{Run}" if Run else TargetDir
-    TargetDir = TargetDir + f"/{Cycle}" if Cycle else TargetDir
+    TargetDir = os.path.join(os.getcwd(), StageName)
+    TargetDir = os.path.join(TargetDir, f"run{Run}") if Run else TargetDir
+    TargetDir = os.path.join(TargetDir, f"cycle{Cycle}") if Cycle else TargetDir
 
     # Ensure target directory is present
     os.makedirs(f"{TargetDir}/namelists/", exist_ok = True)
 
+    print(f"Writing the namelists to {TargetDir}/namelists.")
     # We have an entry in the configoptions for each namelist, so we can iterate through
     for Namelist, NamelistOptions in ConfigOptions.items():
         ReadFile = f"namelists/{Namelist}.nml"
@@ -81,7 +82,7 @@ def BuildNamelists(StageName, RestartDir, Run, Cycle):
             # Open the target WriteFile and write the new namelist to it
             with open(WriteFile, 'w+') as WriteTo:
                 # Write the new string to file
-                WriteTo.write(RunText)
+                WriteTo.write(FileText)
 
 if __name__ == "__main__":
     # Prep the argument parser to read the command line arguments

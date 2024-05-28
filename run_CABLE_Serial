@@ -12,7 +12,8 @@
 # RUN and CONFIG are passed as command line parameters from run_PseudoParallel.sh
 
 # Read in the CONFIG data
-source ExperimentConfig.sh
+source $2
+RUN=$1
 
 # Set the previous stage to the assigned RESTART_DATA
 PreviousStage=$RESTART_DATA
@@ -40,13 +41,13 @@ function RunSingleStepStage() {
 
     # Clean the existing directoty
     if [[ ${CLEAN} -eq 1 ]] ; then
-        echo "Cleaning up ${StageName}/run${RUN} directory."
+        printf "Cleaning up ${StageName}/run${RUN} directory.\n"
         rm ${StageName}/run${RUN} -r
     fi
 
     # Make the directory for the stage, prepare the namelists, and move to the run directory
-    mkdir $StageName/run${RUN} -p
-    echo "Preparing the namelists for stage: ${StageName}"
+    mkdir ${StageName}/run${RUN} -p
+    printf "Preparing the namelists for stage: ${StageName}\n"
     # The prepare_stage.py takes the current stage name, the location of the restart
     # directory and the run ID.
     prepare_stage.py ${StageName} ${PreviousStage} -r ${RUN}
@@ -54,12 +55,12 @@ function RunSingleStepStage() {
 
     # Run the stage
     mkdir -p logs
-    echo "Running stage: ${StageName}"
+    printf "Running stage: ${StageName}\n"
     #./${CABLEExecutable} > logs/cable_out_log.txt
-    echo "Successfully completed stage: ${StageName}"
+    printf "Successfully completed stage: ${StageName}\n\n"
 
     # Rename the PreviousDir to the location of the just completed simulation
-    PreviousStage=${TopDir}/${StageName}/run${RUN}/
+    PreviousStage=${TopDir}/${StageName}/run${RUN}
 
     # Move back to the main run directory
     cd ${TopDir}
@@ -74,35 +75,34 @@ function RunMultiStepStage() {
     #   - The number of times to cycle the steps within the stage
     #   - The CLEAN flag
 
-    StageNames=$1
+    IFS=',' read -ra StageNames <<< $1
     NCycles=$2
     CLEAN=$3
 
-    # Start by splitting the steps within the stage
-    # This command splits comma separated values into an array named SubStages
-    readarray -td, SubStages <<< "${StageNames}"
+    echo "Number of cycles in the stage is ${NCycles}"
 
     # Clean up the existing directories
     if [[ ${CLEAN} -eq 1 ]] ; then
         # For each sub-stage within the larger stage
-        for StageName in "${SubStages[@]}"
+        for StageName in "${StageNames[@]}"
         do
-            echo "Cleaning up ${StageName} directory."
-            rm $StageName -r
+            printf "Cleaning up ${StageName}/run${RUN} directory.\n"
+            rm ${StageName}/run${RUN} -r
         done
     fi
 
+    echo "Number of substages: ${#StageNames[@]}"
     # For the number of cycles we have specified
     for CYCLE in $(seq -f "%02g" 1 ${NCycles}); do
 
         # For each sub-stage
-        for StageName in "${SubStages[@]}"
+        for StageName in "${StageNames[@]}"
         do
 
             # Make the directory for the cycle of the stage, prepare the namelists and
             # move to the run directory
             mkdir ${StageName}/run${RUN}/cycle${CYCLE} -p
-            echo "Preparing the namelists for stage: ${StageName}, cycle: ${CYCLE}"
+            printf "Preparing the namelists for stage: ${StageName}, cycle: ${CYCLE}\n"
 
             # The prepare_stage.py takes the current stage name, the location of 
             # the restart directory and the run ID.
@@ -111,12 +111,12 @@ function RunMultiStepStage() {
 
             # Now run the stage
             mkdir -p logs
-            echo "Running stage: ${StageName}"
+            printf "Running stage: ${StageName}\n"
             #./${CABLEExecutable} > logs/cable_out_log.txt
-            echo "Successfully completed stage: ${StageName}"
+            printf "Successfully completed stage: ${StageName}, cycle: ${CYCLE}\n\n"
 
             # Rename the PreviousDir to the location of the just completed simulation
-            PreviousStage=${TopDir}/${StageName}/run${RUN}/
+            PreviousStage=${TopDir}/${StageName}/run${RUN}/cycle${CYCLE}
 
             # Move back to the main run directory
             cd ${TopDir}
@@ -136,16 +136,17 @@ do
         # Do this stage- check whether it's a single step stage, or a multi-step stage
         # To do this, attempt to turn the entry into an array. If the array has more
         # than one element, it's a multi-step stage
-        readarray -td, StageName <<< "${STAGE_NAMES[$StageNumber]}"
+        IFS=',' read -ra StageName <<< ${STAGE_NAMES[${StageNumber}]}
 
         if [[ ${#StageName[@]} -gt 1 ]] ; then
             # It's a multi-step stage, so call the RunMultiStepStage
-            RunMultiStepStage $StageName ${NCYCLES[$StageNumber]} $CLEAN
+            # Seems you can't pass arrays to bash functions, so pass the unmodified string and split it internally
+            RunMultiStepStage ${STAGE_NAMES[${StageNumber}]} ${CYCLES_PER_STAGE[${StageNumber}]} $CLEAN
         elif [[ ${#StageName[@]} -eq 1 ]] ; then
             # It's a single-step stage, so call the RunSingleStepStage
-            RunSingleStepStage $StageName $CLEAN
+            RunSingleStepStage ${STAGE_NAMES[${StageNumber}]} $CLEAN
         else
-            echo "Invalid input for a stage name: the stage name is ${STAGE_NAMES[$StageNumber]}"
+            printf "Invalid input for a stage name: the stage name is ${STAGE_NAMES[$StageNumber]}"
             exit 1
         fi
     fi

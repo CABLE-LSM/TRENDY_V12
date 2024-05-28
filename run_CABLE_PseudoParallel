@@ -12,7 +12,6 @@ if [[ ${SPLIT_LANDMASK} -eq 1 ]] ; then
 fi
 
 # Detect the queueing system by performing qstat --info for PBS or sinfo for SLURM
-set -e
 
 # Make the first choice PBS, and if it doesn't exist, check SLURM
 qstat --info &> /dev/null
@@ -34,5 +33,5 @@ fi
 # Start up the serial runs
 for RUN in $(seq -f "%03g" 1 ${NRUNS}); do
     #qsub -v RUN=$RUN,CONFIG=$1 run_CABLE_Serial
-    run_CABLE_Serial RUN=$RUN,CONFIG=$1
+    run_CABLE_Serial ${RUN} $1
 done

@@ -1,0 +1,8 @@
+&lucnml
+    TransitionFilePath = "/g/data/rp23/data/no_provenance/luc/LUH2_GCB_1x1/v2023"
+    ClimateFile        = <STRING>   ! Modified in stage
+    DirectRead         = .FALSE.
+    YearStart          = <INTEGER>  ! Modified in stage
+    YearEnd            = <INTEGER>  ! Modified in stage
+    NotPrimOnlyFile    = "none"
+/

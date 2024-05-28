@@ -1,0 +1,22 @@
+cable:
+  filename%restart_in             : ""
+  cable_user%CLIMATE_fromZero     : .true.
+  cable_user%YearStart            : 1841
+  cable_user%YearEnd              : 1860
+  icycle                          : 2
+  spincasa                        : .false.
+  cable_user%CASA_fromZero        : .true.
+  cable_user%CASA_DUMP_READ       : .false.
+  cable_user%CASA_DUMP_WRITE      : .true.
+  cable_user%CASA_SPIN_STARTYEAR  : 1850
+  cable_user%CASA_SPIN_ENDYEAR    : 1859
+  cable_user%limit_labile         : .true.
+  casafile%cnpipool               : ""
+  cable_user%POP_fromZero         : .true.
+  cable_user%POP_out              : "ini"
+  cable_user%POP_restart_in       : ""
+  cable_user%POPLUC               : .false.
+  cable_user%POPLUC_RunType       : "static"
+  cable_user%c13o2                : .false.
+luc:
+cru:
