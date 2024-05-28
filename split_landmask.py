@@ -65,7 +65,7 @@ def main():
         landmask_per_run = landmask_in.where(run_mask == i + 1, 0)
         os.makedirs(f"{args.outpath}/run{i+1}/landmask", exist_ok = True)
         landmask_per_run.to_netcdf(
-            f"{args.outpath}/run{i+1}/landmask/landmask{i+1}.nc",
+            f"{args.outpath}/run{i+1}/landmask/landmask{i+1:03d}.nc",
             encoding={landmask_per_run.name: {"dtype": np.byte, "_FillValue": 0}},
         )
 

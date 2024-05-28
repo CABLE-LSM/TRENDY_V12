@@ -3,7 +3,7 @@
 
 # High-level configuration options
 NRUNS=4                     # The number of serial runs
-CREATE_LANDMASK=1           # Whether to build the landmask
+SPLIT_LANDMASK=1           # Whether to build the landmask
 CLEAN=0                     # Whether to empty the target repositories before running
 RUN_FLAGS=(1 1 1 1 1 1 1)   # Which stages to run. The description of each stage
                             # should be included in the preamble of this file

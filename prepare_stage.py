@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Author: Lachlan Whyborn
-# Last Modified: Tue 28 May 2024 14:28:04
+# Last Modified: Tue 28 May 2024 15:27:47
 
 import argparse
 import yaml
@@ -75,9 +75,21 @@ def BuildNamelists(StageName, RestartDir, Run, Cycle):
                     FileText = ReplaceOption(ConfigOption, OptionValue, FileText)
 
             # Usually the simulations will involve reading restart data from a previous
-            # simulation. The location for the restart data is given by the placeholder
-            # <restartdir> in the namelists.
+            # simulation. The locations for the restart data is assisted by a series of
+            # placeholders.
+            # The most common case is that we get the restart file from the prior stage,
+            # which we access via <restartdir>.
             FileText = FileText.replace("<restartdir>", f"{RestartDir}")
+
+            # Another case is when we want to re-use the data from a specific stage, in
+            # which case we need to retrieve the data from the correct run. We use <run>
+            # as a placeholder for run{Run} (note that Run is already a 3 digit 0 filled
+            # string in the input.
+            FileText = FileText.replace("<run>", f"run{Run}")
+
+            # When constructing filepaths, often we want the starting directory, which
+            # we denote with the <homedir> placeholder.
+            FileText = FileText.replace("<homedir>", os.getcwd())
 
             # Open the target WriteFile and write the new namelist to it
             with open(WriteFile, 'w+') as WriteTo:

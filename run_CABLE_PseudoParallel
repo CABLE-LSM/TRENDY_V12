@@ -22,16 +22,21 @@ SLURM_STAT=$?
 
 if [[ ${PBS_STAT} -eq 0 ]] ; then
     echo "Detected PBS queueing system, using qsub."
-    QUEUE_COMMAND=qsub
+    QUEUE_SYSTEM="PBS"
 elif [[ ${SLURM_STAT} -eq 0 ]] ; then
     echo "Detected SLURM queueing system, using sbatch."
-    QUEUE_COMMAND=sbatch
+    QUEUE_SYSTEM="SLURM"
 else
     echo "Did not detect either PBS or SLURM, please raise an issue on Github."
 fi
 
 # Start up the serial runs
 for RUN in $(seq -f "%03g" 1 ${NRUNS}); do
-    #qsub -v RUN=$RUN,CONFIG=$1 run_CABLE_Serial
-    run_CABLE_Serial ${RUN} $1
+   if [[ ${QUEUE_SYSTEM} -eq "PBS" ]] ; then
+      qsub -v RUN=$RUN,CONFIG=$1 run_CABLE_Serial
+   elif [[ ${QUEUE_SYSTEM} -eq "SLURM" ]] ; then
+      sbatch --export=RUN=${RUN},CONFIG=$1 run_CABLE_Serial
+   else
+      RUN=${RUN} CONFIG=$1 run_CABLE_Serial
+   fi
 done
