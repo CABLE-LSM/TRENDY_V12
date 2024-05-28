@@ -3,12 +3,32 @@
 # Read in the options from the options file
 source $1
 
-# Split the landmask
+# Split the landmask because we run this on the login node
 if [[ ${SPLIT_LANDMASK} -eq 1 ]] ; then
     if [[ ${CLEAN} -eq 1 ]] ; then
         rm landmasks -r
     fi
     python3 split_landmask.py $LANDMASK_FILE $NRUNS landmasks -e $EXTENT
+fi
+
+# Detect the queueing system by performing qstat --info for PBS or sinfo for SLURM
+set -e
+
+# Make the first choice PBS, and if it doesn't exist, check SLURM
+qstat --info &> /dev/null
+PBS_STAT=$?
+
+sinfo &> /dev/null
+SLURM_STAT=$?
+
+if [[ ${PBS_STAT} -eq 0 ]] ; then
+    echo "Detected PBS queueing system, using qsub."
+    QUEUE_COMMAND=qsub
+elif [[ ${SLURM_STAT} -eq 0 ]] ; then
+    echo "Detected SLURM queueing system, using sbatch."
+    QUEUE_COMMAND=sbatch
+else
+    echo "Did not detect either PBS or SLURM, please raise an issue on Github."
 fi
 
 # Start up the serial runs
