@@ -3,6 +3,7 @@
 # Author: Lachlan Whyborn
 # Last Modified: Tue 28 May 2024 15:27:47
 
+import f90nml
 import argparse
 import yaml
 import os
@@ -29,6 +30,22 @@ def ReplaceOption(ConfigOption, OptionValue, FileText):
 
     return FileText
 
+def KeywordReplace(Input, Target, Replacement):
+    """Replace the Target string in InputString with Replacement. This is effectively a recursive wrapper around the typical replace function."""
+
+    # We have 3 options:
+    #   - The input is a string, so we do a simple replacement
+    #   - The input is a dictionary, so we call this function on each of its values
+    #   - The input is anything else, in which case leave it
+    if isinstance(Input, str):
+        return Input.replace(Target, Replacement)
+    elif isinstance(Input, dict):
+        for Option, OptionValue in keys:
+            Input[Option] = KeywordReplace(OptionValue, Target, Replacement)
+        return Input
+    else
+        return Input
+
 def BuildNamelists(StageName, RestartDir, Run, Cycle):
     # Here we make the changes to the default namelists for the current stage.
     # The changes to the defaults are contained in the respective config YAML files
@@ -39,62 +56,57 @@ def BuildNamelists(StageName, RestartDir, Run, Cycle):
     # RestartDir is the location that we're getting the restart files from, and 
     # TargetDir is the location of the current simulation stage.
 
-    # We allow the user to prescribe any options that should be overwritten
-    with open(f"stage_configurations/{StageName}.yml", 'r') as Cfg:
-        ConfigOptions = yaml.safe_load(Cfg)
+    # We allow the user to prescribe any options that should be overwritten,
+    # using reduced namelists of the changed options.
+    # We're using the f90nml library so Fortran users can keep their namelist
+    # formatting for the replacement namelists.
+    # Note that as of 03/06/24, there is an undocumented change in the f90nml
+    # library, namelists are not loaded as dictionaries by default, rather as
+    # Namelist custom types. These custom types seem to behave like dictionaries
+    # for all intents and purposes.
+    with open(f"stage_configurations/{StageName}.nml", 'r') as Cfg:
+        StageOptions = f90nml.read(Cfg)
 
     # Build the target directory which will be the location the stage is run from
     # If Run and Cycle are not none, append them to the path
-    TargetDir = os.path.join(os.getcwd(), StageName)
+    TargetDir = os.path.join(os.getcwd(), "results", StageName)
     TargetDir = os.path.join(TargetDir, f"run{Run}") if Run else TargetDir
     TargetDir = os.path.join(TargetDir, f"cycle{Cycle}") if Cycle else TargetDir
 
     # Ensure target directory is present
-    os.makedirs(f"{TargetDir}/namelists/", exist_ok = True)
+    os.makedirs(f"{TargetDir}", exist_ok = True)
 
-    print(f"Writing the namelists to {TargetDir}/namelists.")
     # We have an entry in the configoptions for each namelist, so we can iterate through
-    for Namelist, NamelistOptions in ConfigOptions.items():
+    for Namelist, NamelistOptions in StageOptions.items():
         ReadFile = f"namelists/{Namelist}.nml"
-        WriteFile = f"{TargetDir}/namelists/{Namelist}.nml"
+        WriteFile = f"{TargetDir}/{Namelist}.nml"
+        # Open the original namelists
         with open(ReadFile, 'r') as ReadFrom:
-            # Read in the file as a string
-            FileText = ReadFrom.read()
+            # Read in the namelist
+            MasterNamelist = f90nml.read(ReadFrom)
 
-            # Now we can use regex to find and replace the desired entries in the namelist
-            # We have a list of things to change from the ConfigOptions, everything should
-            # remain as is.
-            # Sometimes we have no changes in the namelist, so the Namelist options will be
-            # None
-            if NamelistOptions is not None:
-                for ConfigOption, OptionValue in NamelistOptions.items():
-                    # This finds the string "ConfigOption*\n", and replaces it
-                    # with the desired option.
-                    # The function has the special handling for Fortran's booleans, 
-                    # as python won't recognise .TRUE. and .FALSE. as booleans.
-                    FileText = ReplaceOption(ConfigOption, OptionValue, FileText)
+        # We know that each namelist file only contains one namelist, so we can cheat
+        # a little bit and just take the first entry from the namelist values
+        MasterNamelist = next(iter(MasterNamelist.values()))
 
-            # Usually the simulations will involve reading restart data from a previous
-            # simulation. The locations for the restart data is assisted by a series of
-            # placeholders.
-            # The most common case is that we get the restart file from the prior stage,
-            # which we access via <restartdir>.
-            FileText = FileText.replace("<restartdir>", f"{RestartDir}")
+        # We can simply update the master namelist with the values in the stage options
+        MasterNamelist.update(NamelistOptions)
 
-            # Another case is when we want to re-use the data from a specific stage, in
-            # which case we need to retrieve the data from the correct run. We use <run>
-            # as a placeholder for run{Run} (note that Run is already a 3 digit 0 filled
-            # string in the input.
-            FileText = FileText.replace("<run>", f"run{Run}")
+        # Now go through and make any keyword substitutions
+        for Option, OptionValue in MasterNamelist.items():
+            # Unfortunately, the f90nml library handles struct values as nested namelists
+            # i.e. an entry "cable%option : <value>" would be represented as a sub namelist
+            # with entry {"cable: {"option: <value>"}}, rather than {"cable%option: <value}.
+            # So we need to apply a recursive replace function
+            # Only apply to string objects
+            MasterNamelist[Option] = KeywordReplace(OptionValue, "<restartdir>", f"{RestartDir}")
+            MasterNamelist[Option] = KeywordReplace(OptionValue, "<run>", f"{Run}")
+            MasterNamelist[Option] = KeywordReplace(OptionValue, "<homedir>", os.getcwd())
 
-            # When constructing filepaths, often we want the starting directory, which
-            # we denote with the <homedir> placeholder.
-            FileText = FileText.replace("<homedir>", os.getcwd())
-
-            # Open the target WriteFile and write the new namelist to it
-            with open(WriteFile, 'w+') as WriteTo:
-                # Write the new string to file
-                WriteTo.write(FileText)
+        # Open the target WriteFile and write the new namelist to it
+        with open(WriteFile, 'w+') as WriteTo:
+            # Write the new string to file
+            MasterNamelist.write(WriteTo)
 
 if __name__ == "__main__":
     # Prep the argument parser to read the command line arguments
