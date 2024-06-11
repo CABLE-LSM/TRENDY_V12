@@ -23,7 +23,7 @@ module load conda_concept/analysis3
 #-------------------------------------------------------
 # Settings
 #-------------------------------------------------------
-experiment=""
+experiment="S0"
 experiment_name="${experiment}"
 run_model=1       # run the model or just do other steps (e.g. merging)?
 merge_results=0   # after runs are finished, merge results into one folder and backup 
@@ -34,9 +34,9 @@ mergesteps="1700_1900 1901_2022"
 
 ### Spatial subruns ###
 create_landmasks=1               # create new landmask files (1) or use existing ones (0)?
-nruns=100                        # number of runs in parallel
-#extent="64.0,66.0,60.0,62.0"    # "global" or "lon_min,lon_max,lat_min,lat_max"
-extent="global"
+nruns=4                        # number of runs in parallel
+extent="64.0,66.0,60.0,62.0"    # "global" or "lon_min,lon_max,lat_min,lat_max"
+#extent="global"
 climate_restart="cru_climate_rst"       # name of climate restart file (without file extension)
 keep_dump=1                             # keep dump files (1) or discard (0)? They are always kept for LUC runs
 
@@ -66,8 +66,7 @@ export PYTHONPATH=${cablecode}/scripts:${PYTHONPATH}
 # and all the data now lives in rp23/no_provenance
 datadir="/g/data/rp23/data/no_provenance/"
 # Global Meteorology
-GlobalMetPath="${datadir}/met_forcing/crujra_1x1_1d/v2.4"
-MetVersion="CRUJRA_2023"
+GlobalMetPath="/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/data_links/"
 # Global LUC
 GlobalTransitionFilePath="${datadir}/luc/LUH2_GCB_1x1/v2023"
 # Global Surface file 
@@ -98,7 +97,6 @@ if [[ ${run_model} -eq 1 ]] ; then
 	 sed -i "s!^datadir=.*!datadir='${datadir}'!" $run_script
     sed -i "s!^exe=.*!exe='${exe}'!" $run_script
     sed -i "s!^MetPath=.*!MetPath='${GlobalMetPath}'!" $run_script
-    sed -i "s!^MetVersion=.*!MetVersion='${MetVersion}'!" $run_script
     sed -i "s!^TransitionFilePath=.*!TransitionFilePath='${GlobalTransitionFilePath}'!" $run_script
     sed -i "s!^SurfaceFile=.*!SurfaceFile='${SurfaceFile}'!" $run_script
 
