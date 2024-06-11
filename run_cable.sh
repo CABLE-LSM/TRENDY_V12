@@ -2,7 +2,7 @@
 
 # Gadi
 # https://opus.nci.org.au/display/Help/How+to+submit+a+job
-#PBS -N TRENDY_S1
+#PBS -N TRENDY_S0
 #PBS -P rp23
 #PBS -q normal
 #PBS -p 600
@@ -68,9 +68,9 @@ if [[ ! -z ${mpiexecdir} ]] ; then export mpiexecdir="${mpiexecdir}/" ; fi
 ## Basic settings (parsed through from wrapper script)
 ## ------------------------------------------------------------------
 # TRENDY experiment (S0, S1, S2, S3, S4, S5, S6):     
-experiment='S1'
+experiment='S0'
 # Name of the experiment (= name of output folder)     
-experiment_name='S1'
+experiment_name='S0'
 # Code directory
 cablecode='/home/564/lw5085/CABLE'
 # Script directory
@@ -88,19 +88,19 @@ TransitionFilePath='/g/data/rp23/data/no_provenance/luc/LUH2_GCB_1x1/v2023'
 # Global Surface file 
 SurfaceFile='/g/data/rp23/data/no_provenance/gridinfo/gridinfo_CSIRO_1x1.nc'
 # Output directory of the run
-runpath='/scratch/rp23/lw5085/TRENDY_V12/S1/run4'
+runpath='/scratch/rp23/lw5085/TRENDY_V12/S0/run4'
 # Land Mask used for this run
-LandMaskFile='/scratch/rp23/lw5085/TRENDY_V12/S1/run4/landmask/landmask4.nc'
+LandMaskFile='/scratch/rp23/lw5085/TRENDY_V12/S0/run4/landmask/landmask4.nc'
 
 
 ## ----------------------------------------------------------------
 ## Run Sequence
 ## ----------------------------------------------------------------
-doclimate=0     # 1/0: Do/Do not create climate restart file
-dofromzero=0    # 1/0  Do/Do not first spinup phase from zero biomass stocks
-doequi1=0       # 1/0: Do/Do not bring biomass stocks into quasi-equilibrium with unrestricted P and N pools
+doclimate=1     # 1/0: Do/Do not create climate restart file
+dofromzero=1    # 1/0  Do/Do not first spinup phase from zero biomass stocks
+doequi1=1       # 1/0: Do/Do not bring biomass stocks into quasi-equilibrium with unrestricted P and N pools
     nequi1=3        #      number of times to repeat steps in doequi1  4
-doequi2=0       # 1/0: Do/Do not bring biomass stocks into quasi-equilibrium with restricted P and N pools
+doequi2=1       # 1/0: Do/Do not bring biomass stocks into quasi-equilibrium with restricted P and N pools
     nequi2=15       #      number of times to repeat steps in doequi2  14
     nequi2a=5       #      number of times to repeat analytic spinup in this step 5
 if [[ "${experiment}" == "S3" ]] ; then
@@ -943,7 +943,7 @@ if [[ ${dofinal} -eq 1 ]] ; then
              CO2Method = "Yearly"
              NDepMethod = "Yearly"
 EOF
-    elif [[ "${experiment}" == "S2" ]] ; then
+    elif [[ "${experiment}" == "S2" || "${experiment}" == "S3" ]] ; then
         cat > ${tmp}/sedtmp.${pid} << EOF
              CO2Method = "Yearly"
              NDepMethod = "Yearly"
