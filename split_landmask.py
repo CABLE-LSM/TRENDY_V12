@@ -34,7 +34,7 @@ def main():
     # Check if extent is global or regional
     bbox = [-180.0, 180.0, -90.0, 90.0]
     if args.extent != "global":
-        bbox = [coord for coord in args.extent.split(",")]
+        bbox = [float(coord) for coord in args.extent.split(",")]
 
     # Read in the landmask
     landmask_in = xr.open_dataset(args.landmask_file)["land"]
