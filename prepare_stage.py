@@ -1,13 +1,31 @@
 #!/usr/bin/env python3
 
 # Author: Lachlan Whyborn
-# Last Modified: Tue 28 May 2024 15:27:47
+# Last Modified: Fri 07 Jun 2024 15:19:20
 
 import f90nml
 import argparse
 import yaml
 import os
 import re
+
+def RecursiveUpdate(MasterDict, UpdateDict):
+    """Recursively update nested dictionaries, with the combined result in MasterDict."""
+    
+    # Iterate through the values in the UpdateDict, with special handling for specific value types.
+    for Key, Value in UpdateDict.items():
+        if isinstance(Value, dict):
+            # In the instance that the value is another dictionary we either:
+            #   a) Add the new dictionary as a value in the MasterDict, if MasterDict does not already have that key
+            #   b) RecursiveUpdate the existing value in MasterDict with the value from UpdateDict
+            if Key in MasterDict.keys():
+                RecursiveUpdate(MasterDict[Key], Value)
+            else:
+                MasterDict[Key] = Value
+        else:
+            # In all other instances, we can just replace the value
+            MasterDict[Key] = Value
+
 
 def ReplaceOption(ConfigOption, OptionValue, FileText):
     """Replaces the line in FileText containing ConfigOption with 
@@ -31,20 +49,17 @@ def ReplaceOption(ConfigOption, OptionValue, FileText):
     return FileText
 
 def KeywordReplace(Input, Target, Replacement):
-    """Replace the Target string in InputString with Replacement. This is effectively a recursive wrapper around the typical replace function."""
+    """Replace all instances of Target in Input with Replacement."""
 
-    # We have 3 options:
-    #   - The input is a string, so we do a simple replacement
-    #   - The input is a dictionary, so we call this function on each of its values
-    #   - The input is anything else, in which case leave it
-    if isinstance(Input, str):
-        return Input.replace(Target, Replacement)
-    elif isinstance(Input, dict):
-        for Option, OptionValue in keys:
-            Input[Option] = KeywordReplace(OptionValue, Target, Replacement)
-        return Input
-    else
-        return Input
+    for Key, Value in Input.items():
+        # We have 3 options:
+        #   - The value is a string, so we do a simple replacement
+        #   - The value is a dictionary, so we call this function on it
+        #   - The value is anything else, in which case leave it
+        if isinstance(Value, str):
+            Input[Key] = Value.replace(Target, Replacement)
+        elif isinstance(Value, dict):
+            KeywordReplace(Value, Target, Replacement)
 
 def BuildNamelists(StageName, RestartDir, Run, Cycle):
     # Here we make the changes to the default namelists for the current stage.
@@ -77,31 +92,39 @@ def BuildNamelists(StageName, RestartDir, Run, Cycle):
     os.makedirs(f"{TargetDir}", exist_ok = True)
 
     # We have an entry in the configoptions for each namelist, so we can iterate through
-    for Namelist, NamelistOptions in StageOptions.items():
-        ReadFile = f"namelists/{Namelist}.nml"
-        WriteFile = f"{TargetDir}/{Namelist}.nml"
+    # The namelists in the stage configurations must match the names of the namelist files.
+    # The current convention in CABLE is that the namelist in the file is the same name
+    # as the filename appended with nml.
+    # E.g. cable.nml contains the namelist &cablenml, cru.nml contains &crunml.
+    # This allows us to use the namelist titles to grab the relevant master namelist.
+    for NamelistTitle, StageNamelist in StageOptions.items():
+        ReadFile = f"namelists/{NamelistTitle[:-3]}.nml"
+        WriteFile = f"{TargetDir}/{NamelistTitle[:-3]}.nml"
         # Open the original namelists
         with open(ReadFile, 'r') as ReadFrom:
             # Read in the namelist
             MasterNamelist = f90nml.read(ReadFrom)
 
-        # We know that each namelist file only contains one namelist, so we can cheat
-        # a little bit and just take the first entry from the namelist values
-        MasterNamelist = next(iter(MasterNamelist.values()))
-
-        # We can simply update the master namelist with the values in the stage options
-        MasterNamelist.update(NamelistOptions)
+        # Unfortunately the patch() f90nml tool doesn't work in this instance, since it can't
+        # selectively patch individual namelists within a larger namelist file. The intrinsic
+        # dict.update() doesn't work either, because of the way f90nml handles derived types
+        # as nested namelists. Instead, set up a recursive function to step through the nested
+        # namelists.
+        RecursiveUpdate(MasterNamelist[f"{NamelistTitle}"], StageNamelist)
 
         # Now go through and make any keyword substitutions
-        for Option, OptionValue in MasterNamelist.items():
-            # Unfortunately, the f90nml library handles struct values as nested namelists
-            # i.e. an entry "cable%option : <value>" would be represented as a sub namelist
-            # with entry {"cable: {"option: <value>"}}, rather than {"cable%option: <value}.
-            # So we need to apply a recursive replace function
-            # Only apply to string objects
-            MasterNamelist[Option] = KeywordReplace(OptionValue, "<restartdir>", f"{RestartDir}")
-            MasterNamelist[Option] = KeywordReplace(OptionValue, "<run>", f"{Run}")
-            MasterNamelist[Option] = KeywordReplace(OptionValue, "<homedir>", os.getcwd())
+        KeywordReplace(MasterNamelist, "<restartdir>", f"{RestartDir}")
+        KeywordReplace(MasterNamelist, "<run>", f"{Run}")
+        KeywordReplace(MasterNamelist, "<homedir>", os.getcwd())
+        # for Option, OptionValue in MasterNamelist.items():
+            # # Unfortunately, the f90nml library handles struct values as nested namelists
+            # # i.e. an entry "cable%option : <value>" would be represented as a sub namelist
+            # # with entry {"cable: {"option: <value>"}}, rather than {"cable%option: <value}.
+            # # So we need to apply a recursive replace function
+            # # Only apply to string objects
+            # MasterNamelist[Option] = KeywordReplace(OptionValue, "<restartdir>", f"{RestartDir}")
+            # MasterNamelist[Option] = KeywordReplace(OptionValue, "<run>", f"{Run}")
+            # MasterNamelist[Option] = KeywordReplace(OptionValue, "<homedir>", os.getcwd())
 
         # Open the target WriteFile and write the new namelist to it
         with open(WriteFile, 'w+') as WriteTo:
