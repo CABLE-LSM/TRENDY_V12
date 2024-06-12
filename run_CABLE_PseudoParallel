@@ -1,4 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+module purge
+module load use.own
+module load conda_concept/analysis3
+module load intel-compiler/2021.8.0
+module load netcdf/4.8.0
+module load CABLE-run/0.0.1
 
 # Read in the options from the options file
 source $1
@@ -14,28 +21,37 @@ fi
 # Detect the queueing system by performing qstat --info for PBS or sinfo for SLURM
 
 # Make the first choice PBS, and if it doesn't exist, check SLURM
-qstat --info &> /dev/null
+qstat --version &> /dev/null
 PBS_STAT=$?
 
 sinfo &> /dev/null
 SLURM_STAT=$?
 
 if [[ ${PBS_STAT} -eq 0 ]] ; then
-    echo "Detected PBS queueing system, using qsub."
+    echo "Detected PBS queueing system."
     QUEUE_SYSTEM="PBS"
 elif [[ ${SLURM_STAT} -eq 0 ]] ; then
-    echo "Detected SLURM queueing system, using sbatch."
+    echo "Detected SLURM queueing system."
     QUEUE_SYSTEM="SLURM"
 else
-    echo "Did not detect either PBS or SLURM, please raise an issue on Github."
+    echo "Did not detect either PBS or SLURM, please raise an issue on Github with the queueing system you're using."
 fi
+
+# Build the actual submission script- the user has supplied a file containing the PBS/SLURM options at QueueOptions.
+# So copy that file, and append the contents of run_CABLE_Serial to make the file a valid submission script.
+echo "#!/usr/bin/env bash" > submission_script
+cat JobOptions >> submission_script
+tail -n+2 ${CABLE_EXEC}/run_CABLE_Serial >> submission_script
+
+# Initialise the results directory to store the outputs
+mkdir results -p
 
 # Start up the serial runs
 for RUN in $(seq -f "%03g" 1 ${NRUNS}); do
-   if [[ ${QUEUE_SYSTEM} -eq "PBS" ]] ; then
-      qsub -v RUN=$RUN,CONFIG=$1 run_CABLE_Serial
-   elif [[ ${QUEUE_SYSTEM} -eq "SLURM" ]] ; then
-      sbatch --export=RUN=${RUN},CONFIG=$1 run_CABLE_Serial
+   if [ "${QUEUE_SYSTEM}" = "PBS" ]; then
+      qsub -v RUN=$RUN,CONFIG=$1 submission_script
+   elif [ "${QUEUE_SYSTEM}" = "SLURM" ]; then
+      sbatch --export=RUN=${RUN},CONFIG=$1 submission_script
    else
       RUN=${RUN} CONFIG=$1 run_CABLE_Serial
    fi

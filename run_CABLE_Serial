@@ -1,9 +1,11 @@
-#!usr/bin/env bash
+#!/usr/bin/env bash
 
-source QueueOptions
-
-# This reads in the QueueOptions file. Contains the configuration parameters for
-# your queueing system e.g. PBS or SLURM.
+# Load the relevant modules
+module purge
+module load use.own
+module load conda_concept/analysis3
+module load intel-compiler
+module load CABLE-run/0.0.1
 
 # This script is called by the run_PseudoParallel.sh script, and executes one of the
 # serial tasks which form the larger pseudo-parallel experiment.
@@ -17,11 +19,11 @@ source QueueOptions
 # RUN and CONFIG are passed as command line parameters from run_PseudoParallel.sh
 
 # Read in the CONFIG data
-source $2
-RUN=$1
+source ${CONFIG}
+RUN=${RUN}
 
 # Set the previous stage to the assigned RESTART_DATA
-PreviousStage=$RESTART_DATA
+PreviousStage=${RESTART_DATA}
 
 # Ensure the scripts exits when hitting an error
 set -e
@@ -51,21 +53,23 @@ function RunSingleStepStage() {
     fi
 
     # Make the directory for the stage, prepare the namelists, and move to the run directory
-    mkdir ${StageName}/run${RUN} -p
+    mkdir results/${StageName}/run${RUN} -p
     printf "Preparing the namelists for stage: ${StageName}\n"
     # The prepare_stage.py takes the current stage name, the location of the restart
     # directory and the run ID.
     prepare_stage.py ${StageName} ${PreviousStage} -r ${RUN}
-    cd ${StageName}/run${RUN}
+    cp namelists/met_names.nml results/${StageName}/run${RUN}/
+    cd results/${StageName}/run${RUN}
 
     # Run the stage
-    mkdir -p logs
+    mkdir -p logs outputs restart
     printf "Running stage: ${StageName}\n"
-    #./${CABLEExecutable} > logs/cable_out_log.txt
+    cp ${CABLE_CODE} .
+    ./cable > logs/cable_out_log.txt
     printf "Successfully completed stage: ${StageName}\n\n"
 
     # Rename the PreviousDir to the location of the just completed simulation
-    PreviousStage=${TopDir}/${StageName}/run${RUN}
+    PreviousStage=${TopDir}/results/${StageName}/run${RUN}
 
     # Move back to the main run directory
     cd ${TopDir}
@@ -106,22 +110,24 @@ function RunMultiStepStage() {
 
             # Make the directory for the cycle of the stage, prepare the namelists and
             # move to the run directory
-            mkdir ${StageName}/run${RUN}/cycle${CYCLE} -p
+            mkdir results/${StageName}/run${RUN}/cycle${CYCLE} -p
             printf "Preparing the namelists for stage: ${StageName}, cycle: ${CYCLE}\n"
 
             # The prepare_stage.py takes the current stage name, the location of 
             # the restart directory and the run ID.
             prepare_stage.py ${StageName} ${PreviousStage} -r ${RUN} -c ${CYCLE}
-            cd ${StageName}/run${RUN}/cycle${CYCLE}
+            cp namelists/met_names.nml results/${StageName}/run${RUN}/cycle${CYCLE}/
+            cd results/${StageName}/run${RUN}/cycle${CYCLE}
 
             # Now run the stage
-            mkdir -p logs
+            mkdir -p logs outputs restart
             printf "Running stage: ${StageName}\n"
-            #./${CABLEExecutable} > logs/cable_out_log.txt
+            cp ${CABLE_CODE} .
+            ./cable > logs/cable_out_log.txt
             printf "Successfully completed stage: ${StageName}, cycle: ${CYCLE}\n\n"
 
             # Rename the PreviousDir to the location of the just completed simulation
-            PreviousStage=${TopDir}/${StageName}/run${RUN}/cycle${CYCLE}
+            PreviousStage=${TopDir}/results/${StageName}/run${RUN}/cycle${CYCLE}
 
             # Move back to the main run directory
             cd ${TopDir}
