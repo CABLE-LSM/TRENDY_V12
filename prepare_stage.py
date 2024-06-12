@@ -1,67 +1,16 @@
 #!/usr/bin/env python3
 
 # Author: Lachlan Whyborn
-# Last Modified: Fri 07 Jun 2024 15:19:20
+# Last Modified: Wed 12 Jun 2024 16:23:14
 
 import f90nml
 import argparse
-import yaml
 import os
 import re
-
-def RecursiveUpdate(MasterDict, UpdateDict):
-    """Recursively update nested dictionaries, with the combined result in MasterDict."""
-    
-    # Iterate through the values in the UpdateDict, with special handling for specific value types.
-    for Key, Value in UpdateDict.items():
-        if isinstance(Value, dict):
-            # In the instance that the value is another dictionary we either:
-            #   a) Add the new dictionary as a value in the MasterDict, if MasterDict does not already have that key
-            #   b) RecursiveUpdate the existing value in MasterDict with the value from UpdateDict
-            if Key in MasterDict.keys():
-                RecursiveUpdate(MasterDict[Key], Value)
-            else:
-                MasterDict[Key] = Value
-        else:
-            # In all other instances, we can just replace the value
-            MasterDict[Key] = Value
-
-
-def ReplaceOption(ConfigOption, OptionValue, FileText):
-    """Replaces the line in FileText containing ConfigOption with 
-    ConfigOption = OptionValue."""
-    # Perform the in-place substitution for the config option.
-    # We pass it out to a function for the special handling of fortran's booleans
-    FortranBooleans = [".FALSE.", ".TRUE.", "T", "F"]
-
-    if isinstance(OptionValue, str):
-        # Taking the uppercase version simplifies the replacement process, so we catch any case combination of TRUE and FALSE.
-        if OptionValue.upper() in FortranBooleans:
-            # It's a fortran boolean, don't include quotations
-            FileText = re.sub(f"{ConfigOption}(.*?)\n", f"{ConfigOption} = {OptionValue}\n", FileText, re.DOTALL)
-        else:
-            # Is a string option, include quotations
-            FileText = re.sub(f"{ConfigOption}(.*?)\n", f"{ConfigOption} = \"{OptionValue}\"\n", FileText, re.DOTALL)
-    else:
-        # A numeric value
-        FileText = re.sub(f"{ConfigOption}(.*?)\n", f"{ConfigOption} = {OptionValue}\n", FileText, re.DOTALL)
-
-    return FileText
-
-def KeywordReplace(Input, Target, Replacement):
-    """Replace all instances of Target in Input with Replacement."""
-
-    for Key, Value in Input.items():
-        # We have 3 options:
-        #   - The value is a string, so we do a simple replacement
-        #   - The value is a dictionary, so we call this function on it
-        #   - The value is anything else, in which case leave it
-        if isinstance(Value, str):
-            Input[Key] = Value.replace(Target, Replacement)
-        elif isinstance(Value, dict):
-            KeywordReplace(Value, Target, Replacement)
+from prep_utils import RecursiveUpdate, KeywordReplace
 
 def BuildNamelists(StageName, RestartDir, Run, Cycle):
+    """Build the namelists that CABLE will use for stage of a configuration."""
     # Here we make the changes to the default namelists for the current stage.
     # The changes to the defaults are contained in the respective config YAML files
     # We read in the original namelists as a string, and make string replacements
