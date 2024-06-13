@@ -23,7 +23,7 @@ def symlink_to_target(Target: str, LinkName: str):
     # Check the return code to ensure successful completion
     proc.check_returncode()
 
-def create_symlinks(StageNamelist: dict, InputsNamelist: dict):
+def symlink_inputs(StageNamelist: dict, InputsNamelist: dict):
     """Create symlinks between inputs defined in StageNamelist at the locations prescribed by InputsNamelist. Returns a copy of StageNamelist with the input entries changed as per InputsNamelist."""
 
     for Key, Value in InputsNamelist.items():
@@ -37,12 +37,3 @@ def create_symlinks(StageNamelist: dict, InputsNamelist: dict):
                 # We're at a lowest level entry, build the symlink and modify the namelist
                 symlink_to_target(FinalNamelist[Key], Value)
                 StageNamelist[Key] = Value
-
-if __name__ == "__main__":
-    # The pre-defined namelists will exist in a directory neighbouring this script, which
-    # is not the location that the script will be called from. We need the location of
-    # the script to build the filepaths to the pre-defined namelists.
-    ScriptDir = os.path.realpath(__file__)
-
-    # We're going to make the assumption that the namelists that exist in the stage
-    # configuration namelist correspond to input namelists.
