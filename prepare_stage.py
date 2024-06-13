@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Author: Lachlan Whyborn
-# Last Modified: Thu 13 Jun 2024 03:36:09 PM AEST
+# Last Modified: Thu 13 Jun 2024 06:25:40 PM AEST
 
 import f90nml
 import argparse
@@ -28,7 +28,7 @@ def prepare_stage(StageName, RestartDir, Run, Cycle):
 
     # So we want to open the user's namelist file, and use the namelists within that
     # file to determine which master and input namelists to open.
-    with open(f"stage_configuration/{StageName}.nml", 'r') as nmlFile:
+    with open(f"stage_configurations/{StageName}.nml", 'r') as nmlFile:
         StageNamelist = f90nml.read(nmlFile)
 
     for NMLName in StageNamelist.keys():
@@ -47,23 +47,27 @@ def prepare_stage(StageName, RestartDir, Run, Cycle):
         keyword_replace(MasterNamelist, "<run>", f"{Run}")
         keyword_replace(MasterNamelist, "<homedir>", os.getcwd())
         
-        # Build the symlinks to the predefined input locations then modify the master
-        # namelist. The location of the input namelists is in the same directory as the
-        # script.
-        InputName = os.path.join(os.path.realpath(__file__), f"input_namelists", f"{NMLName[:-3]}.nml")
-        with open(InputName) as nmlInputFile:
-            InputNamelist = f90nml.read(nmlInputFile)
-
-        symlink_inputs(MasterNamelist[NMLName], InputNamelist[NMLName])
-
-        # Now we can write the modified namelist to disk
+        # Before symlinking, we need to ensure that the target directories for the input
+        # symlinks exist
         TargetDir = os.path.join(os.getcwd(), "results", StageName)
         TargetDir = os.path.join(TargetDir, f"run{Run}") if Run else TargetDir
         TargetDir = os.path.join(TargetDir, f"cycle{Cycle}") if Cycle else TargetDir
 
         os.makedirs(TargetDir, exist_ok = True)
+        os.makedirs(os.path.join(TargetDir, "inputs/ancillary"), exist_ok = True)
+        os.makedirs(os.path.join(TargetDir, "inputs/restart"), exist_ok = True)
 
-        with open(os.path.join(TargetDir, f"{NMLName[:-3].nml")) as WriteFile:
+        # Build the symlinks to the predefined input locations then modify the master
+        # namelist. The location of the input namelists is in the same directory as the
+        # script.
+        InputName = os.path.join(os.path.dirname(os.path.realpath(__file__)), f"input_namelists", f"{NMLName[:-3]}_inputs.nml")
+        with open(InputName) as nmlInputFile:
+            InputNamelist = f90nml.read(nmlInputFile)
+
+        symlink_inputs(MasterNamelist[NMLName], InputNamelist[NMLName], TargetDir)
+
+        # Now we can write the modified namelist to disk
+        with open(os.path.join(TargetDir, f"{NMLName[:-3]}.nml"), 'w') as WriteFile:
             MasterNamelist.write(WriteFile, force = True)
 
     return 0
