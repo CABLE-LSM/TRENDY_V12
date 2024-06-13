@@ -1,0 +1,14 @@
+&cablenml
+    filename%type = "inputs/ancillary/gridinfo.nc"
+    filename%veg  = "inputs/ancillary/veg_params.txt"
+    filename%soil = "inputs/ancillary/soil_params.txt"
+    filename%restart_in = "inputs/restart/cable_rst.nc"
+    cable_user%POP_restart_in = "inputs/restart/POP_ini.nc"
+    cable_user%LUC_restart_in = "inputs/restart/LUC_rst.nc"
+    cable_user%climate_restart_in = "inputs/restart/climate_rst.nc"
+    cable_user%gm_LUT_file = "inputs/ancillary/gm_LUT.nc"
+    casafile%ncpipool = "inputs/restart/casa"
+    casafile%cnpbiome = "inputs/ancillary/pftlookup.csv"
+    casafile%cnpmetin = "inputs/restart/casa_met.nc"
+/
+

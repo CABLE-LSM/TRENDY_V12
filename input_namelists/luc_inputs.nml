@@ -1,0 +1,4 @@
+&lucnml
+    TransitionFilePath = "inputs/ancillary/LUC"
+    ClimateFile = "inputs/restart/climate_rst.nc"
+/
