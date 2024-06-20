@@ -64,8 +64,8 @@ function RunSingleStepStage() {
     # Run the stage
     mkdir -p logs outputs restart
     printf "Running stage: ${StageName}\n"
-    cp ${CABLE_CODE} .
-    ./cable > logs/cable_out_log.txt
+    #cp ${CABLE_CODE} .
+    #./cable > logs/cable_out_log.txt
     printf "Successfully completed stage: ${StageName}\n\n"
 
     # Rename the PreviousDir to the location of the just completed simulation
@@ -100,21 +100,20 @@ function RunMultiStepStage() {
 
     # Often we run each substage a different number of times. The outer loop must
     # run the largest number of times.
-    MaxCycles=#{NCycles[0]}
-    for CycleCount in "${NCycles[@]}"
+    MaxCycles=${StepCounts[0]}
+    for CycleCount in "${StepCounts[@]}"
     do
-        ((CycleCount > MaxCycles)) && MaxCycles=$CycleCount
+        ((CycleCount > MaxCycles)) && MaxCycles=${CycleCount}
     done
-
-    echo "Number of substages: ${#StageNames[@]}"
+    
     # For the number of cycles we have specified
-    for CYCLE in $(seq -f "%02g" 1 ${CycleCount}); do
+    for CYCLE in $(seq -f "%02g" 1 ${MaxCycles}); do
         
         # For each sub-stage
         for StepIndex in "${!StageNames[@]}"
         do
             # Check whether to run the specified sub-stage
-            if [[ ${CYCLE} <= ${StepCounts[${CYCLE}]} ]]; then
+            if [[ ${CYCLE} -le ${StepCounts[${StepIndex}]} ]]; then
                 StageName=${StageNames[${StageIndex}]}
 
                 # Make the directory for the cycle of the stage, prepare the namelists and
@@ -131,8 +130,8 @@ function RunMultiStepStage() {
                 # Now run the stage
                 mkdir -p logs outputs restart
                 printf "Running stage: ${StageName}\n"
-                cp ${CABLE_CODE} .
-                ./cable > logs/cable_out_log.txt
+                #cp ${CABLE_CODE} .
+                #./cable > logs/cable_out_log.txt
                 printf "Successfully completed stage: ${StageName}, cycle: ${CYCLE}\n\n"
 
                 # Rename the PreviousDir to the location of the just completed simulation
