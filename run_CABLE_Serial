@@ -85,10 +85,8 @@ function RunMultiStepStage() {
     #   - The CLEAN flag
 
     IFS=',' read -ra StageNames <<< $1
-    NCycles=$2
+    IFS=',' read -ra StepCounts <<< $2
     CLEAN=$3
-
-    echo "Number of cycles in the stage is ${NCycles}"
 
     # Clean up the existing directories
     if [[ ${CLEAN} -eq 1 ]] ; then
@@ -100,37 +98,49 @@ function RunMultiStepStage() {
         done
     fi
 
+    # Often we run each substage a different number of times. The outer loop must
+    # run the largest number of times.
+    MaxCycles=#{NCycles[0]}
+    for CycleCount in "${NCycles[@]}"
+    do
+        ((CycleCount > MaxCycles)) && MaxCycles=$CycleCount
+    done
+
     echo "Number of substages: ${#StageNames[@]}"
     # For the number of cycles we have specified
-    for CYCLE in $(seq -f "%02g" 1 ${NCycles}); do
-
+    for CYCLE in $(seq -f "%02g" 1 ${CycleCount}); do
+        
         # For each sub-stage
-        for StageName in "${StageNames[@]}"
+        for StepIndex in "${!StageNames[@]}"
         do
+            # Check whether to run the specified sub-stage
+            if [[ ${CYCLE} <= ${StepCounts[${CYCLE}]} ]]; then
+                StageName=${StageNames[${StageIndex}]}
 
-            # Make the directory for the cycle of the stage, prepare the namelists and
-            # move to the run directory
-            mkdir results/${StageName}/run${RUN}/cycle${CYCLE} -p
-            printf "Preparing the namelists for stage: ${StageName}, cycle: ${CYCLE}\n"
+                # Make the directory for the cycle of the stage, prepare the namelists and
+                # move to the run directory
+                mkdir results/${StageName}/run${RUN}/cycle${CYCLE} -p
+                printf "Preparing the namelists for stage: ${StageName}, cycle: ${CYCLE}\n"
 
-            # The prepare_stage.py takes the current stage name, the location of 
-            # the restart directory and the run ID.
-            prepare_stage.py ${StageName} ${PreviousStage} -r ${RUN} -c ${CYCLE}
-            cp namelists/met_names.nml results/${StageName}/run${RUN}/cycle${CYCLE}/
-            cd results/${StageName}/run${RUN}/cycle${CYCLE}
+                # The prepare_stage.py takes the current stage name, the location of 
+                # the restart directory and the run ID.
+                prepare_stage.py ${StageName} ${PreviousStage} -r ${RUN} -c ${CYCLE}
+                cp namelists/met_names.nml results/${StageName}/run${RUN}/cycle${CYCLE}/
+                cd results/${StageName}/run${RUN}/cycle${CYCLE}
 
-            # Now run the stage
-            mkdir -p logs outputs restart
-            printf "Running stage: ${StageName}\n"
-            cp ${CABLE_CODE} .
-            ./cable > logs/cable_out_log.txt
-            printf "Successfully completed stage: ${StageName}, cycle: ${CYCLE}\n\n"
+                # Now run the stage
+                mkdir -p logs outputs restart
+                printf "Running stage: ${StageName}\n"
+                cp ${CABLE_CODE} .
+                ./cable > logs/cable_out_log.txt
+                printf "Successfully completed stage: ${StageName}, cycle: ${CYCLE}\n\n"
 
-            # Rename the PreviousDir to the location of the just completed simulation
-            PreviousStage=${TopDir}/results/${StageName}/run${RUN}/cycle${CYCLE}
+                # Rename the PreviousDir to the location of the just completed simulation
+                PreviousStage=${TopDir}/results/${StageName}/run${RUN}/cycle${CYCLE}
 
-            # Move back to the main run directory
-            cd ${TopDir}
+                # Move back to the main run directory
+                cd ${TopDir}
+            fi
         done
     done
 }
