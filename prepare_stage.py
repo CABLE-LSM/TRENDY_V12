@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 # Author: Lachlan Whyborn
-# Last Modified: Thu 13 Jun 2024 06:25:40 PM AEST
+# Last Modified: Thu 20 Jun 2024 16:19:15
 
 import f90nml
 import argparse
 import os
-from prep_namelists import merge_namelists, keyword_replace
+from prep_namelists import merge_namelists, process_keywords
 from prep_inputs import symlink_inputs
 
 def prepare_stage(StageName, RestartDir, Run, Cycle):
@@ -43,9 +43,7 @@ def prepare_stage(StageName, RestartDir, Run, Cycle):
         # We have a series of keywords to replace
         # For now, we define the series of replacements here. Maybe in the future, we will
         # delegate this out to an external file
-        keyword_replace(MasterNamelist, "<restartdir>", f"{RestartDir}")
-        keyword_replace(MasterNamelist, "<run>", f"{Run}")
-        keyword_replace(MasterNamelist, "<homedir>", os.getcwd())
+        process_keywords(MasterNamelist, RestartDir, Run)
         
         # Before symlinking, we need to ensure that the target directories for the input
         # symlinks exist
