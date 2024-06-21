@@ -7,8 +7,8 @@
     cable_user%LUC_restart_in = "inputs/restart/LUC_rst.nc"
     cable_user%climate_restart_in = "inputs/restart/climate_rst.nc"
     cable_user%gm_LUT_file = "inputs/ancillary/gm_LUT.nc"
-    casafile%ncpipool = "inputs/restart/casa"
+    casafile%cnpipool = "inputs/restart/casa<suffix>"
     casafile%cnpbiome = "inputs/ancillary/pftlookup.csv"
-    casafile%cnpmetin = "inputs/restart/casa_met.nc"
+    casafile%c2cdumppath = "restart/c2cdump<suffix>"
 /
 
