@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Author: Lachlan Whyborn
-# Last Modified: Thu 20 Jun 2024 16:19:15
+# Last Modified: Mon 24 Jun 2024 08:52:54 PM AEST
 
 import f90nml
 import argparse
@@ -9,7 +9,7 @@ import os
 from prep_namelists import merge_namelists, process_keywords
 from prep_inputs import symlink_inputs
 
-def prepare_stage(StageName, RestartDir, Run, Cycle):
+def prepare_stage(StageName, PreviousStage, PreviousStep, Run, Cycle):
     """Build the namelists that CABLE will use for stage of a configuration, and do the symlinking of inputs to pre-defined locations for consistency."""
     # Master stage preparation function. We pass each of the individual stages out to
     # separate functions. The stages are:
@@ -43,7 +43,7 @@ def prepare_stage(StageName, RestartDir, Run, Cycle):
         # We have a series of keywords to replace
         # For now, we define the series of replacements here. Maybe in the future, we will
         # delegate this out to an external file
-        process_keywords(MasterNamelist, RestartDir, Run)
+        process_keywords(MasterNamelist, PreviousStage, PreviousStep, Run)
         
         # Before symlinking, we need to ensure that the target directories for the input
         # symlinks exist
@@ -74,10 +74,11 @@ if __name__ == "__main__":
     # Prep the argument parser to read the command line arguments
     ArgParser = argparse.ArgumentParser(description = "Prepare the namelists to run a stage of a configuration.")
     ArgParser.add_argument("StageName", help = "Where to write the results to.", type = str)
-    ArgParser.add_argument("RestartDir", nargs = '?', help = "Location of the previous stage.", type = str, default = "")
+    ArgParser.add_argument("--prev_stage", nargs = '?', help = "Location of the previous stage.", type = str, default = "")
+    ArgParser.add_argument("--prev_step", nargs = '?', help = "Location of the previous step in a multi-step run.", type = str, default = "")
     ArgParser.add_argument('-r', '--run', nargs = '?', dest = "Run", help = "The run ID in the pseudo-parallel run.", default = None)
     ArgParser.add_argument('-c', '--cycle', nargs = '?', dest = "Cycle", help = "The cycle number in a multi-stage run.", default = None)
 
     args = ArgParser.parse_args()
 
-    prepare_stage(args.StageName, args.RestartDir, args.Run, args.Cycle)
+    prepare_stage(args.StageName, args.prev_stage, args.prev_step, args.Run, args.Cycle)

@@ -57,15 +57,15 @@ function RunSingleStepStage() {
     printf "Preparing the namelists for stage: ${StageName}\n"
     # The prepare_stage.py takes the current stage name, the location of the restart
     # directory and the run ID.
-    prepare_stage.py ${StageName} ${PreviousStage} -r ${RUN}
+    prepare_stage.py ${StageName} --prev_stage ${PreviousStage} -r ${RUN}
     cp namelists/met_names.nml results/${StageName}/run${RUN}/
     cd results/${StageName}/run${RUN}
 
     # Run the stage
     mkdir -p logs outputs restart
     printf "Running stage: ${StageName}\n"
-    #cp ${CABLE_CODE} .
-    #./cable > logs/cable_out_log.txt
+    cp ${CABLE_CODE} .
+    ./cable > logs/cable_out_log.txt
     printf "Successfully completed stage: ${StageName}\n\n"
 
     # Rename the PreviousDir to the location of the just completed simulation
@@ -106,6 +106,12 @@ function RunMultiStepStage() {
         ((CycleCount > MaxCycles)) && MaxCycles=${CycleCount}
     done
     
+    # For these multi-step stages, we also want to keep track of the location of
+    # the previous equivalent step. Start off by populating it with the previous
+    # stage, so it naturally handles the first cycle of a multi-step stage
+    PreviousStep=()
+    PreviousStep[0]=${PreviousStage}
+
     # For the number of cycles we have specified
     for CYCLE in $(seq -f "%02g" 1 ${MaxCycles}); do
         
@@ -114,7 +120,7 @@ function RunMultiStepStage() {
         do
             # Check whether to run the specified sub-stage
             if [[ ${CYCLE} -le ${StepCounts[${StepIndex}]} ]]; then
-                StageName=${StageNames[${StageIndex}]}
+                StageName=${StageNames[${StepIndex}]}
 
                 # Make the directory for the cycle of the stage, prepare the namelists and
                 # move to the run directory
@@ -123,19 +129,20 @@ function RunMultiStepStage() {
 
                 # The prepare_stage.py takes the current stage name, the location of 
                 # the restart directory and the run ID.
-                prepare_stage.py ${StageName} ${PreviousStage} -r ${RUN} -c ${CYCLE}
+                prepare_stage.py ${StageName} --prev_stage ${PreviousStage} --prev_step ${PreviousStep[${StepIndex}]} -r ${RUN} -c ${CYCLE}
                 cp namelists/met_names.nml results/${StageName}/run${RUN}/cycle${CYCLE}/
                 cd results/${StageName}/run${RUN}/cycle${CYCLE}
 
                 # Now run the stage
                 mkdir -p logs outputs restart
                 printf "Running stage: ${StageName}\n"
-                #cp ${CABLE_CODE} .
-                #./cable > logs/cable_out_log.txt
+                cp ${CABLE_CODE} .
+                ./cable > logs/cable_out_log.txt
                 printf "Successfully completed stage: ${StageName}, cycle: ${CYCLE}\n\n"
 
                 # Rename the PreviousDir to the location of the just completed simulation
                 PreviousStage=${TopDir}/results/${StageName}/run${RUN}/cycle${CYCLE}
+                PreviousStep[${StepIndex}]=${PreviousStage}
 
                 # Move back to the main run directory
                 cd ${TopDir}

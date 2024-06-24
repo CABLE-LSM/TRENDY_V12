@@ -1,5 +1,5 @@
 # Author: Lachlan Whyborn
-# Last Modified: Thu 20 Jun 2024 16:41:03
+# Last Modified: Mon 24 Jun 2024 08:35:58 PM AEST
 
 import os
 
@@ -34,12 +34,12 @@ def keyword_replace(Input: dict, ReplacementDict: dict):
         elif isinstance(Value, dict):
             keyword_replace(Value, ReplacementDict)
 
-def process_keywords(MasterNamelist: dict, RestartDir: str, Run: str):
+def process_keywords(MasterNamelist: dict, PreviousStage: str, PreviousStep, Run: str):
     """Replace keywords denoted by <> with their desired values, built using RestartDir and Run."""
 
     # Currently, we have a hard-coded set of keywords to replace. In future, we may export this a user-modifiable
     # file. We do need to build a way of determining paths to outputs from multi-step stages. For now, act under
     # the assumption that the user will only want to directly refer to results from the final cycle of a multi-step
     # stage.
-    ReplaceDict = {"<restartdir>": f"{RestartDir}", "<run>": f"{Run}", "<homedir>": os.getcwd()}
+    ReplaceDict = {"<prevstage>": f"{PreviousStage}", "<prevstep>": f"{PreviousStep}", "<run>": f"{Run}", "<homedir>": os.getcwd()}
     keyword_replace(MasterNamelist, ReplaceDict)

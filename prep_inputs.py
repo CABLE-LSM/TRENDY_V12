@@ -29,24 +29,25 @@ def symlink_to_target(Target: str, LinkName: str):
 def symlink_suffix(Target: str, InputGlob: str, PathToStage: str):
     """Handle inputs that are set in the namelist with a prefix and the internals set a series of suffixes."""
     # We know that the Target will refer to a series of files, matching the given prefix.
-    print(f"Passed {Target}, {InputGlob} to symlink suffix")
     FileList = glob(Target + "*")
 
-    # To build the symlinks, we need to capture the suffixes from each of the files in the list
+    # To build the symlinks, we need to capture the names of the original files, which we
+    # do via glob, the path to the location where the symlinked inputs are stored, pulled
+    # via splitting the InputGlob, and the filename, which is taken by splitting the
+    # original file path.
+    InputFilePath, _ = os.path.split(InputGlob)
+    os.makedirs(os.path.join(PathToStage, InputFilePath), exist_ok = True)
     for File in FileList:
-        TargetFilePath, TargetFileName = os.path.split(Target)
-        InputFilePath, InputFileName = os.path.split(File)
-        # FileSuffix = re.search(Target + "(.*)", File).group(1)
-        # symlink_to_target(Target + FileSuffix, re.sub("<suffix>", FileSuffix, InputGlob))
+        # Get the path to symlink storage location
+        _, TargetFileName = os.path.split(File)
+
         symlink_to_target(File, os.path.join(PathToStage, InputFilePath, TargetFileName))
-        print(f"Symlinking {File} to {os.path.join(PathToStage, InputFilePath, TargetFileName)}")
 
     # Now we set the correct namelist option for the input
     return InputGlob.replace("<suffix>", "")
 
 def symlink_glob(Target: str, InputGlob: str, PathToStage: str):
     """Handle inputs that are globbed in a different fashion to the suffix inputs, which at the moment is just the met inputs."""
-    print(f"Call symlink glob with {Target}, {InputGlob}")
     # Get the list of files matching the glob, replacing any <> keywords with *
     FileList = glob(re.sub("(<.*?>)", "*", Target))
 
