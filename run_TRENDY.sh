@@ -69,8 +69,7 @@ export PYTHONPATH=${cablecode}/scripts:${PYTHONPATH}
 # and all the data now lives in rp23/no_provenance
 datadir="/g/data/rp23/data/no_provenance/"
 # Global Meteorology
-GlobalMetPath="${datadir}/met_forcing/crujra_1x1_1d/v2.4"
-MetVersion="CRUJRA_2023"
+GlobalMetPath="/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/data_links/"
 # Global LUC
 GlobalTransitionFilePath="${datadir}/luc/LUH2_GCB_1x1/v2023"
 # Global Surface file 

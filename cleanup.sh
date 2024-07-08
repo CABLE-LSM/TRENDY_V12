@@ -68,7 +68,6 @@ for ((irun=1; irun<=${nruns}; irun++)) ; do
     # delete all the rest
     rm -r ${outpath}/run${irun}/
 done
-
 echo "Finished cleaning ${exp_name}"
 
 exit

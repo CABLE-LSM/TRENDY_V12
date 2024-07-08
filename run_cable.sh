@@ -2,7 +2,7 @@
 
 # Gadi
 # https://opus.nci.org.au/display/Help/How+to+submit+a+job
-#PBS -N TRENDY_S0
+#PBS -N S0
 #PBS -P rp23
 #PBS -q normal
 #PBS -p 600
@@ -73,23 +73,23 @@ experiment_name='S0'
 # Code directory
 cablecode='/home/564/lw5085/CABLE'
 # Script directory
-rundir='/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/TRENDY'
+rundir='/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/TRENDY_MCUNTZ'
 # Data directory
 datadir='/g/data/rp23/data/no_provenance/'
 # Cable executable
 exe='/home/564/lw5085/CABLE/offline/cable'
 # Global Meteorology
-MetPath='/g/data/rp23/data/no_provenance//met_forcing/crujra_1x1_1d/v2.4'
+MetPath='/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/data_links/'
 # MetVersion
-MetVersion='CRUJRA_2023'
+MetVersion=''
 # Global LUC
 TransitionFilePath='/g/data/rp23/data/no_provenance//luc/LUH2_GCB_1x1/v2023'
 # Global Surface file 
 SurfaceFile='/g/data/rp23/data/no_provenance//gridinfo/gridinfo_CSIRO_1x1.nc'
 # Output directory of the run
-runpath='/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/TRENDY/S0/run100'
+runpath='/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/TRENDY_MCUNTZ/S0/run4'
 # Land Mask used for this run
-LandMaskFile='/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/TRENDY/S0/run100/landmask/landmask100.nc'
+LandMaskFile='/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/TRENDY_MCUNTZ/S0/run4/landmask/landmask4.nc'
 
 
 ## ----------------------------------------------------------------
@@ -130,19 +130,19 @@ doc13o2=0           # 1/0: Do/Do not calculate 13C
 c13o2_simple_disc=0 # 1/0: simple or full 13C leaf discrimination
 # Parameter files
 namelistpath="${rundir}/namelists"
-filename_veg="${datadir}/parameter/def_veg_params.txt"
-filename_soil="${datadir}/parameter/def_soil_params.txt"
-casafile_cnpbiome="${datadir}/parameter/pftlookup.csv"
+filename_veg='${datadir}/parameter/def_veg_params.txt'
+filename_soil='${datadir}/parameter/def_soil_params.txt'
+casafile_cnpbiome='${datadir}/parameter/pftlookup.csv'
 # Climate restart file 
 # changes for TRENDY >= v11: ClimateFile always created!
 # ClimateFile="/g/data/x45/ipbes/cable_climate/ipsl_climate_rst_glob_1deg.nc"
 #ClimateFile="$(dirname ${runpath})/climate_restart/cru_climate_rst.nc"
 ClimateFile="${runpath}/cru_climate_rst.nc"
 # gm lookup tables
-gm_lut_bernacchi_2002="${datadir}/parameter/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc"
-gm_lut_walker_2013="${datadir}/parameter/gm_LUT_351x3601x7_1pt8245_Walker2013.nc"
+gm_lut_bernacchi_2002='${datadir}/parameter/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc'
+gm_lut_walker_2013='${datadir}/parameter/gm_LUT_351x3601x7_1pt8245_Walker2013.nc'
 # 13C
-filename_d13c_atm="${datadir}/parameter/graven_et_al_gmd_2017-table_s1-delta_13c-1700-2025.txt"
+filename_d13c_atm='${datadir}/parameter/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc'
 
 
 # --------------------------------------------------------------------
@@ -211,7 +211,7 @@ iexe=$(basename ${exe})
 cd ${pdir}
 
 # OS and Workload manager
-ised="sed --in-place=.old"  # Linux: "sed --in-place=.old" ; macOS/Unix: "sed -i .old"
+ised='sed --in-place=.old'
 
 
 # --------------------------------------------------------------------
@@ -271,7 +271,7 @@ printf "\n"
 # Write standard namelists with options that are common to all steps of the sequence.
 # They can, however, be overwritten in later steps.
 
-# global meteo namelist file
+# global met namelist file
 if [[ ${read_fdiff} -eq 1 ]] ; then
     fdiff_bool=.true.
 else
@@ -279,14 +279,37 @@ else
 fi
 
 cat > ${tmp}/sedtmp.${pid} << EOF
-    BasePath     = "${MetPath}"
-    MetPath      = "${MetPath}"
-    MetVersion   = "${MetVersion}"
-    ReadDiffFrac = ${fdiff_bool}
+    rainFile     = "${MetPath}/pre/pre_<startdate>_<enddate>.nc"
+    lwdnFile     = "${MetPath}/dlwrf/dlwrf_<startdate>_<enddate>.nc"
+    swdnFile     = "${MetPath}/tswrf/tswrf_<startdate>_<enddate>.nc"
+    presFile     = "${MetPath}/pres/pres_<startdate>_<enddate>.nc"
+    qairFile     = "${MetPath}/spfh/spfh_<startdate>_<enddate>.nc"
+    TmaxFile     = "${MetPath}/tmax/tmax_<startdate>_<enddate>.nc"
+    TminFile     = "${MetPath}/tmin/tmin_<startdate>_<enddate>.nc"
+    uwindFile    = "${MetPath}/ugrd/ugrd_<startdate>_<enddate>.nc"
+    vwindFile    = "${MetPath}/vgrd/vgrd_<startdate>_<enddate>.nc"
+    fDiffFile    = "${MetPath}/fd/fd_<startdate>_<enddate>.nc"
+    CO2File      = "${MetPath}/co2/co2_17000101_20221231.txt"
+    NDepFile     = "${MetPath}/ndep/NDep_<startdate>_<enddate>.nc"
     LandMaskFile = "${LandMaskFile}"
-    Run          = "S0_TRENDY"
+    rainRecycle = T
+    lwdnRecycle = T
+    swdnRecycle = T
+    presRecycle = T
+    qairRecycle = T
+    TmaxRecycle = T
+    TminRecycle = T
+    uWindRecycle = T
+    vWindRecycle = T
+    fDiffRecycle = T
+    CO2Method = "1700"
+    NDepMethod = "1850"
+    ReadDiffFrac = ${fdiff_bool}
+    DThrs        = 3.0                ! **CABLE** timestep hours (not the met timestep)
 EOF
 applysed ${tmp}/sedtmp.${pid} ${ndir}/cru.nml ${rdir}/cru_${experiment}.nml
+
+cp ${ndir}/met_names.nml ${rdir}
 
 # global landuse change namelist
 cat > ${tmp}/sedtmp.${pid} << EOF
@@ -432,10 +455,19 @@ EOF
     # run model
     cd ${rdir}
     irm logs/log_cable.txt logs/log_out_cable.txt
-    # valgrind --tool=massif --xtree-memory=full --pages-as-heap=yes ./${iexe} > logs/log_out_cable.txt
+    #valgrind --tool=massif --xtree-memory=full --pages-as-heap=yes ./${iexe} > logs/log_out_cable.txt
     ./${iexe} > logs/log_out_cable.txt
-    cp restart/${mettype}_climate_rst.nc ${ClimateFile}  # new for TRENDY >= v11
-    saveid ${rid} ${mettype} ${doc13o2}
+    # save output
+    renameid ${rid} ${mettype}.nml luc.nml cable.nml
+    imv *_${rid}.nml restart/
+    cd logs
+    renameid ${rid} log_cable.txt log_out_cable.txt
+    cd ../restart
+    copyid ${rid} ${mettype}_climate_rst.nc
+    cp ${mettype}_climate_rst.nc ${ClimateFile}  # new for TRENDY >= v11   
+    cd ../outputs
+    renameid ${rid} ${mettype}_out_cable.nc ${mettype}_out_casa.nc
+    cd ..
     cd ${pdir}
 fi
 
@@ -723,15 +755,26 @@ if [[ ${doinidyn} -eq 1 ]] ; then
     YearEnd=1900
     rid=${YearStart}_${YearEnd}
 	         
-    if [[ "${experiment}" == "S0" ]] ; then
+    if [[ "${experiment}" == "S1" || "${experiment}" == "S2" || "${experiment}" == "S3" ]] ; then
         cat > ${tmp}/sedtmp.${pid} << EOF
-            Run = "S0_TRENDY"
+            CO2Method = "Yearly"
+            NDepMethod = "Yearly"
 EOF
-    elif [[ "${experiment}" == "S1" || "${experiment}" == "S2" || "${experiment}" == "S3" ]] ; then
-        cat > ${tmp}/sedtmp.${pid} << EOF
-            Run = "S1_TRENDY"
+   else
+      cat > ${tmp}/sedtmp.${pid} << EOF
+            CO2Method = "1700"
+            NDepMethod = "1850"
 EOF
-    fi	
+    fi
+#    if [[ "${experiment}" == "S0" ]] ; then
+#        cat > ${tmp}/sedtmp.${pid} << EOF
+#            Run = "S0_TRENDY"
+#EOF
+#    elif [[ "${experiment}" == "S1" || "${experiment}" == "S2" || "${experiment}" == "S3" ]] ; then
+#        cat > ${tmp}/sedtmp.${pid} << EOF
+#            Run = "S1_TRENDY"
+#EOF
+#    fi	
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
     
     # LUC
@@ -792,20 +835,46 @@ if [[ ${dofinal} -eq 1 ]] ; then
     YearStart=1901
     YearEnd=2022
     rid=${YearStart}_${YearEnd}
-
-    if [[ "${experiment}" == "S0" ]] ; then
+    if [[ "${experiment}" == "S1" ]] ; then
         cat > ${tmp}/sedtmp.${pid} << EOF
-            Run = "S0_TRENDY"
-EOF
-    elif [[ "${experiment}" == "S1" ]] ; then
-        cat > ${tmp}/sedtmp.${pid} << EOF
-            Run = "S1_TRENDY"
+             CO2Method = "Yearly"
+             NDepMethod = "Yearly"
 EOF
     elif [[ "${experiment}" == "S2" || "${experiment}" == "S3" ]] ; then
         cat > ${tmp}/sedtmp.${pid} << EOF
-            Run = "S2_TRENDY"
+             CO2Method = "Yearly"
+             NDepMethod = "Yearly"
+             rainRecycle = F
+             lwdnRecycle = F
+             swdnRecycle = F
+             presRecycle = F
+             qairRecycle = F
+             TmaxRecycle = F
+             TminRecycle = F
+             uWindRecycle = F
+             vWindRecycle = F
+             fDiffRecycle = F
+EOF
+   else
+      cat > ${tmp}/sedtmp.${pid} << EOF
+            CO2Method = "1700"
+            NDepMethod = "1850"
 EOF
     fi
+
+#    if [[ "${experiment}" == "S0" ]] ; then
+#        cat > ${tmp}/sedtmp.${pid} << EOF
+#            Run = "S0_TRENDY"
+#EOF
+#    elif [[ "${experiment}" == "S1" ]] ; then
+#        cat > ${tmp}/sedtmp.${pid} << EOF
+#            Run = "S1_TRENDY"
+#EOF
+#    elif [[ "${experiment}" == "S2" || "${experiment}" == "S3" ]] ; then
+#        cat > ${tmp}/sedtmp.${pid} << EOF
+#            Run = "S2_TRENDY"
+#EOF
+#    fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
     
     # LUC
