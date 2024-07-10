@@ -3,7 +3,7 @@
 # This script starts multiple sessions of the CABLE run script, each
 # time using different land masks and output folders Before running
 # this script, the following needs to be checked in the CABLE run
-# script: SBATCH settings, Run sequence, CABLE settings
+# script: PBS/SBATCH settings, Run sequence, CABLE settings
 
 # Script requires the following files
 # landmask_script --> creates landmasks
@@ -14,11 +14,20 @@
 #     - requires merge_to_output2d.py
 # cleanup script  --> cleans up folder structure
 
+set -e
+
 #-------------------------------------------------------
 # Modules
 #-------------------------------------------------------
-eval "$(${HOME}/miniconda3/bin/conda 'shell.bash' 'hook' 2> /dev/null)"
-conda activate pystd
+
+if [[ -e ${HOME}/miniconda3/bin/conda ]] ; then
+    eval "$(${HOME}/miniconda3/bin/conda 'shell.bash' 'hook' 2> /dev/null)"
+    conda activate pystd
+else
+    module purge
+    module load intel-compiler/2021.8.0
+    module load conda_concept/analysis3
+fi
 
 #-------------------------------------------------------
 # Settings
@@ -26,14 +35,14 @@ conda activate pystd
 # TRENDY experiment (S0, S1, S2, S3, S4, S5, S6):
 experiment="S3"
 experiment_name="S3"
-run_model=0       # 1/0: Do/Do not run the model
+run_model=1       # 1/0: Do/Do not run the model
 merge_results=1   # 1/0: Do/Do not merge results into one folder and backup restart,
                   # logs, landmasks, etc.
 # mergesteps="zero_biomass spinup_nutrient_limited_1 spinup_nutrient_limited_2 1700_1900 1901_2022"   # sub-steps to be merged
 mergesteps="1700_1900 1901_2022"  # sub-steps to be merged
 
 ### Spatial subruns ###
-create_landmasks=0                 # 1: create new landmasks, 0: use existing masks
+create_landmasks=1                 # 1: create new landmasks, 0: use existing masks
 nruns=31                          # number of runs in parallel
 # extent="64.0,66.0,60.0,62.0"     # "global" or "lon_min,lon_max,lat_min,lat_max"
 extent="global"
@@ -47,7 +56,7 @@ cablecode="${HOME}/prog/github/cable/cable"
 # Run directory
 rundir="${PWD}"
 # Output directory- where the results are written to
-outpath="${HOME}/projects/cable/trendy_v12/${experiment_name}"
+outpath="${HOME}/projects/cable/trendy_v12_met/${experiment_name}"
 # Parameter directory
 paramdir="${cablecode}/params/v12"
 # LUT directory
@@ -62,12 +71,14 @@ cleanup_script="${rundir}/cleanup.sh"
 # Cable executable- we should move this to bin
 exe="${cablecode}/offline/cable"
 
+# Append the location of the cablepop python module to the PYTHONPATH
+export PYTHONPATH=${cablecode}/scripts:${PYTHONPATH}
+
 # The location of the data- note that the "aux" variable has been removed,
 # and all the data now lives in rp23/no_provenance
 datadir="${HOME}/data"
 # Global Meteorology
-GlobalMetPath="${datadir}/met_forcing/CRUJRA2023/daily_1deg"
-MetVersion="CRUJRA_2023"
+GlobalMetPath="${datadir}/met_forcing/CRUJRA2023/daily_1deg_met"
 # Global LUC
 GlobalTransitionFilePath="${datadir}/cable/LUH2/GCB_2023/1deg/EXTRACT"
 # Global Surface file
@@ -86,19 +97,34 @@ gm_lut_walker_2013="${lutdir}/gm_LUT_351x3601x7_1pt8245_Walker2013.nc"
 # 13C
 filename_d13c_atm="${lutdir}/graven_et_al_gmd_2017-table_s1-delta_13c-1700-2025.txt"
 
-# OS and Workload manager
-ised="sed --in-place=.old"  # Linux: "sed --in-place=.old" ; macOS/Unix: "sed -i .old"
-pqsub="sbatch --parsable"  # PBS: "qsub" ; Slurm: "sbatch --parsable"
-# PBS: qsub -W "depend=afterok:id1:id2"
-# Slurm: sbatch --dependency=afterok:id1:id2
-function dqsub()
-{
-    # # PBS
-    # echo "qsub -W \"depend=afterok${1}\""
-    # Slurm
-    echo "sbatch --parsable --dependency=afterok${1}"
-}
-ntag="SBATCH --job-name="  # PBS: "PBS -N " ; Slurm: "SBATCH --job-name="
+# OS
+# Linux: "sed --in-place=.old" ; macOS/Unix: "sed -i .old"
+if [[ $(uname -s) == Darwin ]] ; then
+    ised="sed -i .old"
+else
+    ised="sed --in-place=.old"
+fi
+
+# Workload manager
+# 1. PBS: "qsub" ; Slurm: "sbatch --ignore-pbs --parsable"
+# 2. PBS: qsub -W "depend=afterok:id1:id2"
+#    Slurm: sbatch --ignore-pbs --parsable --dependency=afterok:id1:id2
+# 3. PBS: "PBS -N " ; Slurm: "SBATCH --job-name="
+if [[ -e ${HOME}/miniconda3/bin/conda ]] ; then
+    pqsub="sbatch --ignore-pbs --parsable"
+    function dqsub()
+    {
+        echo "sbatch --ignore-pbs --parsable --dependency=afterok${1}"
+    }
+    ntag="SBATCH --job-name="
+else
+    pqsub="qsub"
+    function dqsub()
+    {
+        echo "qsub -W \"depend=afterok${1}\""
+    }
+    ntag="PBS -N "
+fi
 
 ## ---------------------------- End Settings ---------------------------------- ##
 
@@ -197,3 +223,5 @@ if [[ ${merge_results} -eq 1 ]] ; then
 
     echo "Submitted clean job ${CLEAN_ID}"
 fi
+
+exit

@@ -14,8 +14,23 @@
 #SBATCH --mail-type=FAIL,STAGE_OUT,TIME_LIMIT,INVALID_DEPEND,END
 #SBATCH --mail-user=matthias.cuntz@inrae.fr
 
+# Gadi
+# https://opus.nci.org.au/display/Help/How+to+submit+a+job
+#PBS -N CABLE_cleanup
+#PBS -P pr09
+#PBS -q normal
+#PBS -l walltime=00:30:00
+#PBS -l mem=1GB
+#PBS -l ncpus=1
+#PBS -l storage=gdata/x45+scratch/pt17+gdata/pr09+scratch/pr09
+#PBS -l software=netCDF:MPI:Intel:GNU:scorep
+#PBS -r y
+#PBS -l wd
+#PBS -j oe
+#PBS -S /bin/bash
+
 exp_name='S3'
-outpath='/home/mcuntz/projects/cable/trendy_v12'
+outpath='/home/mcuntz/projects/cable/trendy_v12_met'
 nruns=31
 climate_restart='cru_climate_rst'
 keep_dump=0
@@ -37,7 +52,7 @@ mv ${outpath}/run1/cable ${outpath}/exe/
 # job files
 echo "Move job output files"
 mkdir -p ${outpath}/job
-mv ${PWD}/${exp_name}.o* ${outpath}/job/
+mv ${PWD}/${exp_name}*.o* ${outpath}/job/
 
 echo "Move restart files, logs, landmasks, and dump files"
 echo "Delete run directories"

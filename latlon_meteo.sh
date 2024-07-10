@@ -21,8 +21,11 @@ set -e
 # --------------------------------------------------------------------
 # Load Modules
 #
-eval "$(${HOME}/miniconda3/bin/conda 'shell.bash' 'hook' 2> /dev/null)"
-conda activate pystd
+
+if [[ -e ${HOME}/miniconda3/bin/conda ]] ; then
+    eval "$(${HOME}/miniconda3/bin/conda 'shell.bash' 'hook' 2> /dev/null)"
+    conda activate pystd
+fi
 
 
 # --------------------------------------------------------------------

@@ -97,7 +97,7 @@ def create_run_mask(
 
     Parameters
     ----------
-    landmask_in : xarray.DataArray
+    landmask_in : xr.DataArray
         Initial land mask variable. It must have:
            - 1 for land
            - missing value for ocean
@@ -106,7 +106,7 @@ def create_run_mask(
 
     Returns
     -------
-    xarray.DataArray
+    xr.DataArray
         New mask created with value N for a land point for the run N.
 
     """

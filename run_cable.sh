@@ -15,6 +15,22 @@
 #SBATCH --mail-type=FAIL,STAGE_OUT,TIME_LIMIT,INVALID_DEPEND,END
 #SBATCH --mail-user=matthias.cuntz@inrae.fr
 
+# Gadi
+# https://opus.nci.org.au/display/Help/How+to+submit+a+job
+#PBS -N S0
+#PBS -P rp23
+#PBS -q normal
+#PBS -p 600
+#PBS -l walltime=10:30:00
+#PBS -l mem=4GB
+#PBS -l ncpus=1
+#PBS -l storage=gdata/rp23+scratch/rp23+scratch/hh5
+#PBS -l software=netCDF:MPI:Intel:GNU
+#PBS -r y
+#PBS -l wd
+#PBS -j oe
+#PBS -S /bin/bash
+
 # --------------------------------------------------------------------
 #
 # Full Cable run with biomass spinup, POP, land-use change, etc.
@@ -51,8 +67,19 @@
 # --------------------------------------------------------------------
 # Load Modules
 # --------------------------------------------------------------------
-eval "$(${HOME}/miniconda3/bin/conda 'shell.bash' 'hook' 2> /dev/null)"
-conda activate pystd
+if [[ -e ${HOME}/miniconda3/bin/conda ]] ; then
+    eval "$(${HOME}/miniconda3/bin/conda 'shell.bash' 'hook' 2> /dev/null)"
+    conda activate pystd
+else
+    pdir=${isdir}
+    . /etc/bashrc
+    module purge
+    module load intel-compiler/2021.5.0
+    module load intel-mpi/2021.5.1
+    module load netcdf/4.8.0
+    export mpiexecdir=/apps/intel-mpi/2021.5.1/bin
+    if [[ ! -z ${mpiexecdir} ]] ; then export mpiexecdir="${mpiexecdir}/" ; fi
+fi
 
 
 # --------------------------------------------------------------------
@@ -61,37 +88,37 @@ conda activate pystd
 # TRENDY experiment (S0, S1, S2, S3, S4, S5, S6):     
 experiment='S3'
 # Name of the experiment (= name of output folder)     
-experiment_name='FR-Hes'
+experiment_name='S3'
 # Code directory
 cablecode='/home/mcuntz/prog/github/cable/cable'
 # Script directory
-rundir='/home/mcuntz/prog/github/cable/trendy_v12'
+rundir='/home/mcuntz/projects/cable/trendy_v12_met'
 # Data directory
 datadir='/home/mcuntz/data'
 # Cable executable
 exe='/home/mcuntz/prog/github/cable/cable/offline/cable'
-# MetVersion
-MetVersion='CRUJRA_2023'
 # Global Surface file 
 SurfaceFile='/home/mcuntz/data/cable/CABLE-AUX/offline/gridinfo_CSIRO_1x1.nc'
-# Output directory of the run
-runpath="/home/mcuntz/projects/cable/sites/${experiment_name}"
 
 # Using Global Meteorology
+# Output directory of the run
+runpath="/home/mcuntz/projects/cable/trendy_v12_met/${experiment_name}"
+# Land Mask used for this run
+LandMaskFile="${runpath}/landmask_${experiment_name}.nc"
 # Global Meteorology
-MetPath='/home/mcuntz/data/met_forcing/CRUJRA2023/daily_1deg'
+MetPath='/home/mcuntz/data/met_forcing/CRUJRA2023/daily_1deg_met'
 # Global LUC
 TransitionFilePath='/home/mcuntz/data/cable/LUH2/GCB_2023/1deg/EXTRACT'
-# Land Mask used for this run
-LandMaskFile="/home/mcuntz/projects/cable/sites/${experiment_name}/landmask_${experiment_name}.nc"
 
 # # Using Local Meteorology
+# # Output directory of the run
+# runpath="/home/mcuntz/projects/cable/sites/${experiment_name}"
+# # Land Mask used for this run
+# LandMaskFile="${runpath}/mask/landmask_${experiment_name}.nc"
 # # Local Meteorology
 # MetPath="/home/mcuntz/projects/cable/sites/${experiment_name}/met"
 # # Local LUC
 # TransitionFilePath="/home/mcuntz/projects/cable/sites/${experiment_name}/luh"
-# # Land Mask used for this run
-# LandMaskFile="/home/mcuntz/projects/cable/sites/${experiment_name}/mask/landmask_${experiment_name}.nc"
 
 
 # --------------------------------------------------------------------
@@ -133,24 +160,25 @@ doc13o2=0           # 1/0: Do/Do not calculate 13C
 c13o2_simple_disc=0 # 1/0: simple or full 13C leaf discrimination
 # Parameter files
 namelistpath="${rundir}/namelists"
-filename_veg='/home/mcuntz/prog/github/cable/cable/params/v12/def_veg_params.txt'
-filename_soil='/home/mcuntz/prog/github/cable/cable/params/v12/def_soil_params.txt'
-casafile_cnpbiome='/home/mcuntz/prog/github/cable/cable/params/v12/pftlookup.csv'
+filename_veg='/home/mcuntz/prog/github/cable/cable.cable-pop_trendy/params/v12/def_veg_params.txt'
+filename_soil='/home/mcuntz/prog/github/cable/cable.cable-pop_trendy/params/v12/def_soil_params.txt'
+casafile_cnpbiome='/home/mcuntz/prog/github/cable/cable.cable-pop_trendy/params/v12/pftlookup.csv'
 # Climate restart file 
 # changes for TRENDY >= v11: ClimateFile always created!
 # ClimateFile="/g/data/x45/ipbes/cable_climate/ipsl_climate_rst_glob_1deg.nc"
 #ClimateFile="$(dirname ${runpath})/climate_restart/cru_climate_rst.nc"
 ClimateFile="${runpath}/cru_climate_rst.nc"
 # gm lookup tables
-gm_lut_bernacchi_2002='/home/mcuntz/prog/github/cable/cable/params/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc'
-gm_lut_walker_2013='/home/mcuntz/prog/github/cable/cable/params/gm_LUT_351x3601x7_1pt8245_Walker2013.nc'
+gm_lut_bernacchi_2002='/home/mcuntz/prog/github/cable/cable.cable-pop_trendy/params/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc'
+gm_lut_walker_2013='/home/mcuntz/prog/github/cable/cable.cable-pop_trendy/params/gm_LUT_351x3601x7_1pt8245_Walker2013.nc'
 # 13C
-filename_d13c_atm='/home/mcuntz/prog/github/cable/cable/params/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc'
+filename_d13c_atm='/home/mcuntz/prog/github/cable/cable.cable-pop_trendy/params/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc'
 
 
 # --------------------------------------------------------------------
 # Setup and Functions
 # --------------------------------------------------------------------
+
 set -e
 
 trap cleanup 1 2 3 6
@@ -212,8 +240,13 @@ cp ${exe} ./
 iexe=$(basename ${exe})
 cd ${pdir}
 
-# OS and Workload manager
-ised="sed --in-place=.old"  # Linux: "sed --in-place=.old" ; macOS/Unix: "sed -i .old"
+# OS
+# Linux: "sed --in-place=.old" ; macOS/Unix: "sed -i .old"
+if [[ $(uname -s) == Darwin ]] ; then
+    ised="sed -i .old"
+else
+    ised="sed --in-place=.old"
+fi
 
 
 # --------------------------------------------------------------------
@@ -273,7 +306,7 @@ printf "\n"
 # Write standard namelists with options that are common to all steps
 # of the sequence. They can, however, be overwritten in later steps.
 
-# global meteo namelist file
+# global met namelist file
 if [[ ${read_fdiff} -eq 1 ]] ; then
     fdiff_bool=.true.
 else
@@ -281,14 +314,37 @@ else
 fi
 
 cat > ${tmp}/sedtmp.${pid} << EOF
-    BasePath     = "${MetPath}"
-    MetPath      = "${MetPath}"
-    MetVersion   = "${MetVersion}"
-    ReadDiffFrac = ${fdiff_bool}
+    rainFile     = "${MetPath}/pre/pre_<startdate>_<enddate>.nc"
+    lwdnFile     = "${MetPath}/dlwrf/dlwrf_<startdate>_<enddate>.nc"
+    swdnFile     = "${MetPath}/tswrf/tswrf_<startdate>_<enddate>.nc"
+    presFile     = "${MetPath}/pres/pres_<startdate>_<enddate>.nc"
+    qairFile     = "${MetPath}/spfh/spfh_<startdate>_<enddate>.nc"
+    TmaxFile     = "${MetPath}/tmax/tmax_<startdate>_<enddate>.nc"
+    TminFile     = "${MetPath}/tmin/tmin_<startdate>_<enddate>.nc"
+    uwindFile    = "${MetPath}/ugrd/ugrd_<startdate>_<enddate>.nc"
+    vwindFile    = "${MetPath}/vgrd/vgrd_<startdate>_<enddate>.nc"
+    fDiffFile    = "${MetPath}/fd/fd_<startdate>_<enddate>.nc"
+    CO2File      = "${MetPath}/co2/co2_17000101_20221231.txt"
+    NDepFile     = "${MetPath}/ndep/NDep_<startdate>_<enddate>.nc"
     LandMaskFile = "${LandMaskFile}"
-    Run          = "S0_TRENDY"
+    rainRecycle = T
+    lwdnRecycle = T
+    swdnRecycle = T
+    presRecycle = T
+    qairRecycle = T
+    TmaxRecycle = T
+    TminRecycle = T
+    uWindRecycle = T
+    vWindRecycle = T
+    fDiffRecycle = T
+    CO2Method = "1700"
+    NDepMethod = "1850"
+    ReadDiffFrac = ${fdiff_bool}
+    DThrs        = 3.0                ! **CABLE** timestep hours (not the met timestep)
 EOF
 applysed ${tmp}/sedtmp.${pid} ${ndir}/cru.nml ${rdir}/cru_${experiment}.nml
+
+cp ${ndir}/met_names.nml ${rdir}
 
 # global landuse change namelist
 cat > ${tmp}/sedtmp.${pid} << EOF
@@ -728,10 +784,14 @@ if [[ ${doinidyn} -eq 1 ]] ; then
     if [[ "${experiment}" == "S0" ]] ; then
         cat > ${tmp}/sedtmp.${pid} << EOF
             Run = "S0_TRENDY"
+            CO2Method = "1700"
+            NDepMethod = "1850"
 EOF
     elif [[ "${experiment}" == "S1" || "${experiment}" == "S2" || "${experiment}" == "S3" ]] ; then
         cat > ${tmp}/sedtmp.${pid} << EOF
             Run = "S1_TRENDY"
+            CO2Method = "Yearly"
+            NDepMethod = "Yearly"
 EOF
     fi	
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
@@ -798,14 +858,30 @@ if [[ ${dofinal} -eq 1 ]] ; then
     if [[ "${experiment}" == "S0" ]] ; then
         cat > ${tmp}/sedtmp.${pid} << EOF
             Run = "S0_TRENDY"
+            CO2Method = "1700"
+            NDepMethod = "1850"
 EOF
     elif [[ "${experiment}" == "S1" ]] ; then
         cat > ${tmp}/sedtmp.${pid} << EOF
             Run = "S1_TRENDY"
+            CO2Method = "Yearly"
+            NDepMethod = "Yearly"
 EOF
     elif [[ "${experiment}" == "S2" || "${experiment}" == "S3" ]] ; then
         cat > ${tmp}/sedtmp.${pid} << EOF
             Run = "S2_TRENDY"
+            CO2Method = "Yearly"
+            NDepMethod = "Yearly"
+            rainRecycle = .false.
+            lwdnRecycle = .false.
+            swdnRecycle = .false.
+            presRecycle = .false.
+            qairRecycle = .false.
+            TmaxRecycle = .false.
+            TminRecycle = .false.
+            uWindRecycle = .false.
+            vWindRecycle = .false.
+            fDiffRecycle = .false.
 EOF
     fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
