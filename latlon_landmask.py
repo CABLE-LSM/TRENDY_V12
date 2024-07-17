@@ -19,17 +19,19 @@ import cablepop as cp
 def generate_parser():
     """Generate the argument parser"""
     args = argparse.ArgumentParser(
-        description=("Generate land mask for CABLE-POP with only latitude,longitude"
-                     " set on given latitudes,longitudes."))
-    args.add_argument("global_landmask_file", type=str,
-                      help="Initial global landmask file")
-    args.add_argument("latlon", type=str,
+        description=('Generate land mask for CABLE-POP with only latitude,longitude'
+                     ' set on given latitudes,longitudes.'))
+    args.add_argument('global_landmask_file', type=str,
+                      help=('Initial global landmask file, e.g.'
+                            ' ${HOME}/data/cable/ipbes/masks/glob_ipsl_1x1.nc'))
+    args.add_argument('latlon', type=str,
                       help=('latitude,longitude of selected grid point,'
                             ' or file with several latitude,longitude'
-                            ' coordinates.'))
-    args.add_argument("outfile", type=str,
-                      help="Filename of output file")
-    args.add_argument("-l", "--land", action='store_true', default=False,
+                            ' coordinates. For example,'
+                            ' FR-Hes: 48.6742166667,7.06461666667'))
+    args.add_argument('outfile', type=str,
+                      help='Filename of output file, e.g. landmask_FR-Hes.nc')
+    args.add_argument('-l', '--land', action='store_true', default=False,
                       help=('Set only latitudes/longitudes that are on land'
                             ' in the global_landmask_file '
                             ' (default: sets also if in ocean)'))
