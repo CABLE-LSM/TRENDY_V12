@@ -52,8 +52,8 @@ keep_dump=0                        # 1/0: keep or discard dump files.
 
 ### Directories and files ###
 # Code directory - set this to where your version of the code is located
-cablecode="${HOME}/prog/github/cable/cable"
-# Run directory
+cablecode="${HOME}/prog/github/cable/cable.cable-pop_trendy"
+# Run directory (assumes that trend_v12 directory was copied to rundir)
 rundir="${PWD}"
 # Output directory- where the results are written to
 outpath="${HOME}/projects/cable/trendy_v12_met/${experiment_name}"
@@ -76,7 +76,7 @@ export PYTHONPATH=${cablecode}/scripts:${PYTHONPATH}
 
 # The location of the data- note that the "aux" variable has been removed,
 # and all the data now lives in rp23/no_provenance
-datadir="${HOME}/data"
+datadir="/home/mcuntz/data"
 # Global Meteorology
 GlobalMetPath="${datadir}/met_forcing/CRUJRA2023/daily_1deg_met"
 # Global LUC

@@ -9,6 +9,8 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
+# # ca. 20 min for a single site
+# # SBATCH --time=00:30:00
 # ca. 25 hrs with 31 jobs on 1x1 grid
 #SBATCH --time=29:00:00
 #SBATCH --mem=4G
@@ -85,40 +87,45 @@ fi
 # --------------------------------------------------------------------
 # Basic settings (parsed through from wrapper script)
 # --------------------------------------------------------------------
-# TRENDY experiment (S0, S1, S2, S3, S4, S5, S6):     
-experiment='S3'
-# Name of the experiment (= name of output folder)     
-experiment_name='S3'
+# TRENDY experiment (S0, S1, S2, S3, S4, S5, S6)
+experiment="S3"
+# Name of the experiment (= name of output folder)
+experiment_name="S3"
 # Code directory
-cablecode='/home/mcuntz/prog/github/cable/cable'
+cablecode="${HOME}/prog/github/cable/cable.cable-pop_trendy"
 # Script directory
-rundir='/home/mcuntz/projects/cable/trendy_v12_met'
+# rundir="${HOME}/projects/cable/sites/${experiment_name}"
+rundir="${HOME}/projects/cable/trendy_v12_met"
 # Data directory
-datadir='/home/mcuntz/data'
+datadir="/home/mcuntz/data"
 # Cable executable
-exe='/home/mcuntz/prog/github/cable/cable/offline/cable'
-# Global Surface file 
-SurfaceFile='/home/mcuntz/data/cable/CABLE-AUX/offline/gridinfo_CSIRO_1x1.nc'
+exe="${cablecode}/bin/cable"
+# Global Surface file
+SurfaceFile="${datadir}/cable/CABLE-AUX/offline/gridinfo_CSIRO_1x1.nc"
 
 # Using Global Meteorology
 # Output directory of the run
-runpath="/home/mcuntz/projects/cable/trendy_v12_met/${experiment_name}"
+# runpath="${HOME}/projects/cable/trendy_v12_met/${experiment_name}"
+runpath="${HOME}/projects/cable/trendy_v12_met/${experiment_name}"
 # Land Mask used for this run
-LandMaskFile="${runpath}/landmask_${experiment_name}.nc"
+# Use latlon_landmask.py to extract latitudes/longitudes
+# if not launched by run_trendy.sh, e.g.
+# python latlon_landmask.py glob_ipsl_1x1.nc 48.6742166667,7.06461666667 landmask_FR-Hes.nc
+LandMaskFile="${runpath}/landmask_${experiment_name%%\.*}.nc"
 # Global Meteorology
-MetPath='/home/mcuntz/data/met_forcing/CRUJRA2023/daily_1deg_met'
+MetPath="${datadir}/met_forcing/CRUJRA2023/daily_1deg_met"
 # Global LUC
-TransitionFilePath='/home/mcuntz/data/cable/LUH2/GCB_2023/1deg/EXTRACT'
+TransitionFilePath="${datadir}/cable/LUH2/GCB_2023/1deg/EXTRACT"
 
 # # Using Local Meteorology
 # # Output directory of the run
-# runpath="/home/mcuntz/projects/cable/sites/${experiment_name}"
+# runpath="${HOME}/projects/cable/sites/${experiment_name}"
 # # Land Mask used for this run
-# LandMaskFile="${runpath}/mask/landmask_${experiment_name}.nc"
+# LandMaskFile="${runpath}/mask/landmask_${experiment_name%%\.*}.nc"
 # # Local Meteorology
-# MetPath="/home/mcuntz/projects/cable/sites/${experiment_name}/met"
+# MetPath="${HOME}/projects/cable/sites/${experiment_name}/met"
 # # Local LUC
-# TransitionFilePath="/home/mcuntz/projects/cable/sites/${experiment_name}/luh"
+# TransitionFilePath="${HOME}/projects/cable/sites/${experiment_name}/luh"
 
 
 # --------------------------------------------------------------------
@@ -138,7 +145,7 @@ else
 fi
 doinidyn=1      # 1/0: Do/Do not full dynamic spinup (transient run) from 1701 to 1900
 dofinal=1       # 1/0: Do/Do not final run from 1901 to 2022
-    
+
 purge_restart=0  # Delete all restart files?
 
 
@@ -147,7 +154,7 @@ purge_restart=0  # Delete all restart files?
 # --------------------------------------------------------------------
 # MetType
 mettype="cru"       # "cru", "plume", "bios"
-# Cable 
+# Cable
 read_fdiff=1        # 1/0: do/do not read in diffuse radiation fraction
 call_blaze=0        # 1/0: do/do not call BLAZE
 explicit_gm=0       # 1/0: explicit (finite) or implicit mesophyll conductance
@@ -160,19 +167,19 @@ doc13o2=0           # 1/0: Do/Do not calculate 13C
 c13o2_simple_disc=0 # 1/0: simple or full 13C leaf discrimination
 # Parameter files
 namelistpath="${rundir}/namelists"
-filename_veg='/home/mcuntz/prog/github/cable/cable.cable-pop_trendy/params/v12/def_veg_params.txt'
-filename_soil='/home/mcuntz/prog/github/cable/cable.cable-pop_trendy/params/v12/def_soil_params.txt'
-casafile_cnpbiome='/home/mcuntz/prog/github/cable/cable.cable-pop_trendy/params/v12/pftlookup.csv'
-# Climate restart file 
+filename_veg="${cablecode}/params/v12/def_veg_params.txt"
+filename_soil="${cablecode}/params/v12/def_soil_params.txt"
+casafile_cnpbiome="${cablecode}/params/v12/pftlookup.csv"
+# Climate restart file
 # changes for TRENDY >= v11: ClimateFile always created!
 # ClimateFile="/g/data/x45/ipbes/cable_climate/ipsl_climate_rst_glob_1deg.nc"
 #ClimateFile="$(dirname ${runpath})/climate_restart/cru_climate_rst.nc"
 ClimateFile="${runpath}/cru_climate_rst.nc"
 # gm lookup tables
-gm_lut_bernacchi_2002='/home/mcuntz/prog/github/cable/cable.cable-pop_trendy/params/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc'
-gm_lut_walker_2013='/home/mcuntz/prog/github/cable/cable.cable-pop_trendy/params/gm_LUT_351x3601x7_1pt8245_Walker2013.nc'
+gm_lut_bernacchi_2002="${cablecode}/params/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc"
+gm_lut_walker_2013="${cablecode}/params/gm_LUT_351x3601x7_1pt8245_Walker2013.nc"
 # 13C
-filename_d13c_atm='/home/mcuntz/prog/github/cable/cable.cable-pop_trendy/params/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc'
+filename_d13c_atm="${cablecode}/params/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc"
 
 
 # --------------------------------------------------------------------
@@ -457,13 +464,13 @@ fi
 if [[ ${doclimate} -eq 1 ]] ; then
     echo "1. Create climate restart file"
     rid="climate_restart"
-    
+
     # Met forcing
     cp ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
-	
+
     # LUC
     cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
-    
+
     # Cable
     cat > ${tmp}/sedtmp.${pid} << EOF
         filename%restart_in            = ""
@@ -487,6 +494,7 @@ if [[ ${doclimate} -eq 1 ]] ; then
         cable_user%c13o2               = .false.
 EOF
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
+
     # run model
     cd ${rdir}
     irm logs/log_cable.txt logs/log_out_cable.txt
@@ -497,7 +505,6 @@ EOF
     cd ${pdir}
 fi
 
-echo "Finish stage 1"
 
 # --------------------------------------------------------------------
 # 2. First spinup phase from zero biomass
@@ -584,13 +591,14 @@ if [[ ${doequi1} -eq 1 ]] ; then
             cable_user%POPLUC_RunType      = "static"
 EOF
         applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
+
         # run model
         cd ${rdir}
         irm logs/log_cable.txt logs/log_out_cable.txt
         ./${iexe} > logs/log_out_cable.txt
 	saveid ${rid} ${mettype} ${doc13o2}
         cd ${pdir}
-	
+
         #
         # 3b. analytic quasi-equilibrium of biomass pools
 	echo "   3b. Analytic solution of biomass pools"
@@ -622,6 +630,7 @@ EOF
             cable_user%POPLUC_RunType      = "static"
 EOF
         applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
+
         # run model
         cd ${rdir}
         irm logs/log_cable.txt logs/log_out_cable.txt
@@ -678,7 +687,7 @@ EOF
 
 	#
         # 4b. analytic quasi-equilibrium of biomass pools
-        if [[ ${iequi2} -le ${nequi2a} ]] ; then        
+        if [[ ${iequi2} -le ${nequi2a} ]] ; then
             echo "   4b. Analytic solution of biomass pools"
             # rid="spinup_analytic"
             rid="spinup_analytic_${iequi2}"
@@ -730,7 +739,7 @@ if [[ ${doiniluc} -eq 1 ]] ; then
     YearStart=1580  # should be the same as in the global luc.nml file!
     YearEnd=1699
     cp ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
-    
+
     # LUC
     cat > ${tmp}/sedtmp.${pid} << EOF
          YearStart = ${YearStart}
@@ -780,7 +789,7 @@ if [[ ${doinidyn} -eq 1 ]] ; then
     YearStart=1700
     YearEnd=1900
     rid=${YearStart}_${YearEnd}
-	         
+
     if [[ "${experiment}" == "S0" ]] ; then
         cat > ${tmp}/sedtmp.${pid} << EOF
             Run = "S0_TRENDY"
@@ -793,9 +802,9 @@ EOF
             CO2Method = "Yearly"
             NDepMethod = "Yearly"
 EOF
-    fi	
+    fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
-    
+
     # LUC
     if [[ "${experiment}" == "S3" ]] ; then
        cat > ${tmp}/sedtmp.${pid} << EOF
@@ -809,14 +818,14 @@ EOF
 EOF
     fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
-    
+
     # Cable
     if [[ "${experiment}" == "S3" ]] ; then
 	POPLUC_RunType="restart"
     else
         POPLUC_RunType="static"
     fi
-    
+
     cat > ${tmp}/sedtmp.${pid} << EOF
         cable_user%CLIMATE_fromZero    = .false.
         cable_user%YearStart           = ${YearStart}
@@ -885,7 +894,7 @@ EOF
 EOF
     fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
-    
+
     # LUC
     if [[ "${experiment}" == "S3" ]] ; then
        cat > ${tmp}/sedtmp.${pid} << EOF
@@ -899,14 +908,14 @@ EOF
 EOF
     fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
-    
+
     # Cable
     if [[ "${experiment}" == "S3" ]] ; then
 	POPLUC_RunType="restart"
     else
         POPLUC_RunType="static"
     fi
-    
+
     cat > ${tmp}/sedtmp.${pid} << EOF
         cable_user%CLIMATE_fromZero    = .false.
         cable_user%YearStart           = ${YearStart}
