@@ -87,35 +87,55 @@ fi
 # --------------------------------------------------------------------
 # Basic settings (parsed through from wrapper script)
 # --------------------------------------------------------------------
+isite=1  # 0/1: 0: use global forcing data with landmask; 1: use site data
 # TRENDY experiment (S0, S1, S2, S3, S4, S5, S6)
 experiment="S3"
 # Name of the experiment (= name of output folder)
-experiment_name="S3"
+experiment_name='FR-Pue'
 # Code directory
 cablecode="${HOME}/prog/github/cable/cable.cable-pop_trendy"
-# Script directory
-# rundir="${HOME}/projects/cable/sites/${experiment_name}"
-rundir="${HOME}/projects/cable/trendy_v12_met"
-# Data directory
-datadir="/home/mcuntz/data"
+if [[ ${isite} -eq 0 ]] ; then
+    # Script directory
+    rundir="${HOME}/projects/cable/sites/${experiment_name}"
+    # Data directory
+    datadir="${HOME}/projects/coco2/cable-pop"
+else
+    # Script directory
+    # rundir="${HOME}/projects/coco2/cable-pop/output/${experiment_name}"
+    rundir="${HOME}/projects/cable/sites/${experiment_name}"
+    # Data directory
+    datadir="${HOME}/projects/coco2/cable-pop"
+fi
+# Global data dir
+globaldatadir="/home/mcuntz/data"
 # Cable executable
 exe="${cablecode}/bin/cable"
 # Global Surface file
-SurfaceFile="${datadir}/cable/CABLE-AUX/offline/gridinfo_CSIRO_1x1.nc"
+SurfaceFile="${globaldatadir}/cable/CABLE-AUX/offline/gridinfo_CSIRO_1x1.nc"
 
 # Using Global Meteorology
 # Output directory of the run
-# runpath="${HOME}/projects/cable/trendy_v12_met/${experiment_name}"
-runpath="${HOME}/projects/cable/trendy_v12_met/${experiment_name}"
+runpath=${rundir}
+if [[ ${isite} -eq 0 ]] ; then
+    # Global Meteorology
+    MetPath="${globaldatadir}/met_forcing/CRUJRA2023/daily_1deg_met"
+else
+    # # Output directory of the run
+    # runpath=.
+    # Site Meteorology
+    MetPath="${datadir}/input"
+    # local files
+    CO2NdepFile="${MetPath}/AmaFACE_co2npdepforcing_1850_2100_AMB_JK.csv"
+    MetFile="${MetPath}/${experiment_name}_meteo.nc"
+    sitelist="${datadir}/misc/coco2_sites.txt"
+fi
 # Land Mask used for this run
 # Use latlon_landmask.py to extract latitudes/longitudes
 # if not launched by run_trendy.sh, e.g.
-# python latlon_landmask.py glob_ipsl_1x1.nc 48.6742166667,7.06461666667 landmask_FR-Hes.nc
+#   python latlon_landmask.py glob_ipsl_1x1.nc 48.6742166667,7.06461666667 landmask_FR-Hes.nc
 LandMaskFile="${runpath}/landmask_${experiment_name%%\.*}.nc"
-# Global Meteorology
-MetPath="${datadir}/met_forcing/CRUJRA2023/daily_1deg_met"
 # Global LUC
-TransitionFilePath="${datadir}/cable/LUH2/GCB_2023/1deg/EXTRACT"
+TransitionFilePath="${globaldatadir}/cable/LUH2/GCB_2023/1deg/EXTRACT"
 
 # # Using Local Meteorology
 # # Output directory of the run
@@ -153,7 +173,11 @@ purge_restart=0  # Delete all restart files?
 # CABLE Settings
 # --------------------------------------------------------------------
 # MetType
-mettype="cru"       # "cru", "plume", "bios"
+if [[ ${isite} -eq 0 ]] ; then
+    mettype="cru"   # "cru"
+else
+    mettype="site"  # "site"
+fi
 # Cable
 read_fdiff=1        # 1/0: do/do not read in diffuse radiation fraction
 call_blaze=0        # 1/0: do/do not call BLAZE
@@ -171,16 +195,31 @@ filename_veg="${cablecode}/params/v12/def_veg_params.txt"
 filename_soil="${cablecode}/params/v12/def_soil_params.txt"
 casafile_cnpbiome="${cablecode}/params/v12/pftlookup.csv"
 # Climate restart file
-# changes for TRENDY >= v11: ClimateFile always created!
-# ClimateFile="/g/data/x45/ipbes/cable_climate/ipsl_climate_rst_glob_1deg.nc"
-#ClimateFile="$(dirname ${runpath})/climate_restart/cru_climate_rst.nc"
-ClimateFile="${runpath}/cru_climate_rst.nc"
+ClimateFile="${runpath}/${mettype}_climate_rst.nc"
 # gm lookup tables
 gm_lut_bernacchi_2002="${cablecode}/params/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc"
 gm_lut_walker_2013="${cablecode}/params/gm_LUT_351x3601x7_1pt8245_Walker2013.nc"
 # 13C
 filename_d13c_atm="${cablecode}/params/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc"
 
+if [[ ${isite} -eq 1 ]] ; then
+    # no LUC in site level runs
+    doiniluc=0
+    # input years
+    start_year=$(grep "${experiment_name}" ${sitelist} | cut -f 2)
+    end_year=$(grep "${experiment_name}" ${sitelist} | cut -f 3)
+    nyears=$(( ${end_year} - ${start_year} + 1 ))
+    # transient years
+    pre_indust=1850
+    nloop_transient=$(( (${start_year} - 1 - ${pre_indust}) / ${nyears} ))
+    start_year_transient=$(( ${start_year} - 1 - ${nloop_transient} * ${nyears} + 1 ))
+    end_year_transient=$(( ${start_year_transient} + ${nloop_transient} * ${nyears} - 1 ))
+    # spinup years
+    nyear_spinup=30
+    nloop_spin=$(( ${nloop_transient} / ${nyear_spinup} + 1 ))
+    end_year_spin=$(( ${start_year_transient} - 1 ))
+    start_year_spin=$(( ${end_year_spin} - ${nloop_spin} * ${nyears} + 1 ))
+fi
 
 # --------------------------------------------------------------------
 # Setup and Functions
@@ -297,7 +336,6 @@ printf "        filename_veg=${filename_veg}\n"
 printf "        filename_soil=${filename_soil}\n"
 printf "        casafile_cnpbiome=${casafile_cnpbiome}\n"
 printf "        MetPath=${MetPath}\n"
-printf "        MetVersion=${MetVersion}\n"
 printf "        ClimateFile=${ClimateFile}\n"
 printf "        TransitionFilePath=${TransitionFilePath}\n"
 printf "        gm_lut_bernacchi_2002=${gm_lut_bernacchi_2002}\n"
@@ -320,47 +358,63 @@ else
     fdiff_bool=.false.
 fi
 
-cat > ${tmp}/sedtmp.${pid} << EOF
-    rainFile     = "${MetPath}/pre/pre_<startdate>_<enddate>.nc"
-    lwdnFile     = "${MetPath}/dlwrf/dlwrf_<startdate>_<enddate>.nc"
-    swdnFile     = "${MetPath}/tswrf/tswrf_<startdate>_<enddate>.nc"
-    presFile     = "${MetPath}/pres/pres_<startdate>_<enddate>.nc"
-    qairFile     = "${MetPath}/spfh/spfh_<startdate>_<enddate>.nc"
-    TmaxFile     = "${MetPath}/tmax/tmax_<startdate>_<enddate>.nc"
-    TminFile     = "${MetPath}/tmin/tmin_<startdate>_<enddate>.nc"
-    uwindFile    = "${MetPath}/ugrd/ugrd_<startdate>_<enddate>.nc"
-    vwindFile    = "${MetPath}/vgrd/vgrd_<startdate>_<enddate>.nc"
-    fDiffFile    = "${MetPath}/fd/fd_<startdate>_<enddate>.nc"
-    CO2File      = "${MetPath}/co2/co2_17000101_20221231.txt"
-    NDepFile     = "${MetPath}/ndep/NDep_<startdate>_<enddate>.nc"
-    LandMaskFile = "${LandMaskFile}"
-    rainRecycle = T
-    lwdnRecycle = T
-    swdnRecycle = T
-    presRecycle = T
-    qairRecycle = T
-    TmaxRecycle = T
-    TminRecycle = T
-    uWindRecycle = T
-    vWindRecycle = T
-    fDiffRecycle = T
-    CO2Method = "1700"
-    NDepMethod = "1850"
-    ReadDiffFrac = ${fdiff_bool}
-    DThrs        = 3.0                ! **CABLE** timestep hours (not the met timestep)
+if [[ ${isite} -eq 0 ]] ; then
+    cat > ${tmp}/sedtmp.${pid} << EOF
+        rainFile     = "${MetPath}/pre/pre_<startdate>_<enddate>.nc"
+        lwdnFile     = "${MetPath}/dlwrf/dlwrf_<startdate>_<enddate>.nc"
+        swdnFile     = "${MetPath}/tswrf/tswrf_<startdate>_<enddate>.nc"
+        presFile     = "${MetPath}/pres/pres_<startdate>_<enddate>.nc"
+        qairFile     = "${MetPath}/spfh/spfh_<startdate>_<enddate>.nc"
+        TmaxFile     = "${MetPath}/tmax/tmax_<startdate>_<enddate>.nc"
+        TminFile     = "${MetPath}/tmin/tmin_<startdate>_<enddate>.nc"
+        uwindFile    = "${MetPath}/ugrd/ugrd_<startdate>_<enddate>.nc"
+        vwindFile    = "${MetPath}/vgrd/vgrd_<startdate>_<enddate>.nc"
+        fDiffFile    = "${MetPath}/fd/fd_<startdate>_<enddate>.nc"
+        CO2File      = "${MetPath}/co2/co2_17000101_20221231.txt"
+        NDepFile     = "${MetPath}/ndep/NDep_<startdate>_<enddate>.nc"
+        LandMaskFile = "${LandMaskFile}"
+        rainRecycle = T
+        lwdnRecycle = T
+        swdnRecycle = T
+        presRecycle = T
+        qairRecycle = T
+        TmaxRecycle = T
+        TminRecycle = T
+        uWindRecycle = T
+        vWindRecycle = T
+        fDiffRecycle = T
+        CO2Method = "1700"
+        NDepMethod = "1850"
+        ReadDiffFrac = ${fdiff_bool}
+        DThrs        = 3.0                ! **CABLE** timestep hours (not the met timestep)
 EOF
-applysed ${tmp}/sedtmp.${pid} ${ndir}/cru.nml ${rdir}/cru_${experiment}.nml
+else
+    cat > ${tmp}/sedtmp.${pid} << EOF
+        RunType       = "spinup"
+        CO2NDepFile   = "${CO2NdepFile}"
+        spinstartyear = ${start_year}
+        spinendyear   = ${end_year}
+        spinCO2  = 285
+        spinNdep = 0.79
+        spinPdep = 0.144
+EOF
+fi
+applysed ${tmp}/sedtmp.${pid} ${ndir}/${mettype}.nml ${rdir}/${mettype}_${experiment}.nml
 
-cp ${ndir}/met_names.nml ${rdir}
+if [[ ${isite} -eq 0 ]] ; then
+    cp ${ndir}/met_names.nml ${rdir}
+fi
 
 # global landuse change namelist
-cat > ${tmp}/sedtmp.${pid} << EOF
-    TransitionFilePath = "${TransitionFilePath}"
-    ClimateFile        = "${ClimateFile}"
-    YearStart          = 1700
-    YearEnd            = 2022
+if [[ ${isite} -eq 0 ]] ; then
+    cat > ${tmp}/sedtmp.${pid} << EOF
+        TransitionFilePath = "${TransitionFilePath}"
+        ClimateFile        = "${ClimateFile}"
+        YearStart          = 1700
+        YearEnd            = 2022
 EOF
-applysed ${tmp}/sedtmp.${pid} ${ndir}/luc.nml ${rdir}/luc_${experiment}.nml
+    applysed ${tmp}/sedtmp.${pid} ${ndir}/luc.nml ${rdir}/luc_${experiment}.nml
+fi
 
 # global Cable namelist
 if [[ "${Rubisco_params}" == "Bernacchi_2002" ]] ; then
@@ -416,6 +470,9 @@ cat > ${tmp}/sedtmp.${pid} << EOF
     cable_user%c13o2_restart_in_luc    = "restart/${mettype}_c13o2_luc_rst.nc"
     cable_user%c13o2_restart_out_luc   = "restart/${mettype}_c13o2_luc_rst.nc"
 EOF
+if [[ ${isite} -eq 1 ]] ; then
+    ${ised} -e "/filename%met/s|=.*|= \"${MetFile}\"|" ${tmp}/sedtmp.${pid}
+fi
 if [[ ${call_pop} -eq 1 ]] ; then
     ${ised} -e "/cable_user%CALL_POP/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
 fi
@@ -466,10 +523,12 @@ if [[ ${doclimate} -eq 1 ]] ; then
     rid="climate_restart"
 
     # Met forcing
-    cp ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
+    cp ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
     # LUC
-    cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+    if [[ ${isite} -eq 0 ]] ; then
+	cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+    fi
 
     # Cable
     cat > ${tmp}/sedtmp.${pid} << EOF
@@ -514,10 +573,12 @@ if [[ ${dofromzero} -eq 1 ]] ; then
     rid="zero_biomass"
 
     # Met forcing
-    cp ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
+    cp ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
     # LUC
-    cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+    if [[ ${isite} -eq 0 ]] ; then
+	cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+    fi
 
     # Cable
     cat > ${tmp}/sedtmp.${pid} << EOF
@@ -543,6 +604,9 @@ if [[ ${dofromzero} -eq 1 ]] ; then
         cable_user%c13o2_restart_in_flux  = ""
         cable_user%c13o2_restart_in_pools = ""
 EOF
+    if [[ ${isite} -eq 1 ]] ; then
+	${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
+    fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
 
     # run model
@@ -567,10 +631,12 @@ if [[ ${doequi1} -eq 1 ]] ; then
         # rid="spinup_limit_labile${iequi}"
 
 	# Met forcing
-        cp ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
+        cp ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
         # LUC
-        cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+	if [[ ${isite} -eq 0 ]] ; then
+	    cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+	fi
 
         # Cable
         cat > ${tmp}/sedtmp.${pid} << EOF
@@ -590,6 +656,14 @@ if [[ ${doequi1} -eq 1 ]] ; then
             cable_user%POPLUC              = .true.
             cable_user%POPLUC_RunType      = "static"
 EOF
+	if [[ ! -f restart/pop_${mettype}_ini.nc ]] ; then
+	    # no restart file if POP%np == 0
+	    ${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
+	    echo "cable_user%POP_restart_in = \"\"" >> ${tmp}/sedtmp.${pid}
+	fi
+	if [[ ${isite} -eq 1 ]] ; then
+	    ${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
+	fi
         applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
 
         # run model
@@ -606,10 +680,12 @@ EOF
         # rid="spin_casa_limit_labile${iequi}"
 
         # Met forcing
-        cp ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
+        cp ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
         # LUC
-        cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+	if [[ ${isite} -eq 0 ]] ; then
+	    cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+	fi
 
         # Cable
         cat > ${tmp}/sedtmp.${pid} << EOF
@@ -629,6 +705,13 @@ EOF
             cable_user%POPLUC              = .true.
             cable_user%POPLUC_RunType      = "static"
 EOF
+	if [[ ! -f restart/pop_${mettype}_ini.nc ]] ; then
+	    ${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
+	    echo "cable_user%POP_restart_in = \"\"" >> ${tmp}/sedtmp.${pid}
+	fi
+	if [[ ${isite} -eq 1 ]] ; then
+	    ${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
+	fi
         applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
 
         # run model
@@ -653,10 +736,12 @@ if [[ ${doequi2} -eq 1 ]] ; then
         rid="spinup_nutrient_limited_${iequi2}"
 
 	# Met forcing
-        cp ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
+        cp ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
 	# LUC
-	cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+	if [[ ${isite} -eq 0 ]] ; then
+	    cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+	fi
 
 	# Cable
         cat > ${tmp}/sedtmp.${pid} << EOF
@@ -676,8 +761,15 @@ if [[ ${doequi2} -eq 1 ]] ; then
             cable_user%POPLUC              = .true.
             cable_user%POPLUC_RunType      = "static"
 EOF
-
+	if [[ ! -f restart/pop_${mettype}_ini.nc ]] ; then
+	    ${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
+	    echo "cable_user%POP_restart_in = \"\"" >> ${tmp}/sedtmp.${pid}
+	fi
+	if [[ ${isite} -eq 1 ]] ; then
+	    ${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
+	fi
         applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
+
         # run model
         cd ${rdir}
         irm logs/log_cable.txt logs/log_out_cable.txt
@@ -692,11 +784,12 @@ EOF
             # rid="spinup_analytic"
             rid="spinup_analytic_${iequi2}"
             # Met forcing
-            cp ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
+            cp ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
             # LUC
-            cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
-            # applysed ${tmp}/sedtmp.${pid} ${rdir}/LUC_${experiment}.nml ${rdir}/LUC.nml
+	    if [[ ${isite} -eq 0 ]] ; then
+		cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+	    fi
 
             # Cable
             cat > ${tmp}/sedtmp.${pid} << EOF
@@ -716,7 +809,15 @@ EOF
                 cable_user%POPLUC              = .true.
                 cable_user%POPLUC_RunType      = "static"
 EOF
+	    if [[ ! -f restart/pop_${mettype}_ini.nc ]] ; then
+		${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
+		echo "cable_user%POP_restart_in = \"\"" >> ${tmp}/sedtmp.${pid}
+	    fi
+	    if [[ ${isite} -eq 1 ]] ; then
+		${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
+	    fi
             applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
+
             # run model
             cd ${rdir}
             irm logs/log_cable.txt logs/log_out_cable.txt
@@ -738,14 +839,23 @@ if [[ ${doiniluc} -eq 1 ]] ; then
     # Met forcing
     YearStart=1580  # should be the same as in the global luc.nml file!
     YearEnd=1699
-    cp ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
+    if [[ ${isite} -eq 0 ]] ; then
+	cp ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
+    else
+	cat > ${tmp}/sedtmp.${pid} << EOF
+    RunType = "transient"
+EOF
+	applysed ${tmp}/sedtmp.${pid} ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
+    fi
 
     # LUC
-    cat > ${tmp}/sedtmp.${pid} << EOF
-         YearStart = ${YearStart}
-         YearEnd   = ${YearEnd}
+    if [[ ${isite} -eq 0 ]] ; then
+	cat > ${tmp}/sedtmp.${pid} << EOF
+    	    YearStart = ${YearStart}
+    	    YearEnd   = ${YearEnd}
 EOF
-    applysed ${tmp}/sedtmp.${pid} ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+	applysed ${tmp}/sedtmp.${pid} ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
+    fi
 
     # Cable
     cat > ${tmp}/sedtmp.${pid} << EOF
@@ -768,8 +878,15 @@ EOF
         cable_user%LUC_restart_in       = ""
         cable_user%c13o2_restart_in_luc = ""
 EOF
-
+    if [[ ! -f restart/pop_${mettype}_ini.nc ]] ; then
+	${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
+	echo "cable_user%POP_restart_in = \"\"" >> ${tmp}/sedtmp.${pid}
+    fi
+    if [[ ${isite} -eq 1 ]] ; then
+	${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
+    fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
+
     # run model
     cd ${rdir}
     irm logs/log_cable.txt logs/log_out_cable.txt
@@ -786,38 +903,51 @@ if [[ ${doinidyn} -eq 1 ]] ; then
     echo "6. Transient run (full dynamic spinup)"
 
     # Met forcing
-    YearStart=1700
-    YearEnd=1900
+    if [[ ${isite} -eq 0 ]] ; then
+	YearStart=1700
+	YearEnd=1900
+    else
+	YearStart=${start_year_transient}
+	YearEnd=${end_year_transient}
+    fi
     rid=${YearStart}_${YearEnd}
 
-    if [[ "${experiment}" == "S0" ]] ; then
-        cat > ${tmp}/sedtmp.${pid} << EOF
-            Run = "S0_TRENDY"
-            CO2Method = "1700"
-            NDepMethod = "1850"
+    if [[ ${isite} -eq 0 ]] ; then
+	if [[ "${experiment}" == "S0" ]] ; then
+            cat > ${tmp}/sedtmp.${pid} << EOF
+            	Run = "S0_TRENDY"
+            	CO2Method = "1700"
+            	NDepMethod = "1850"
 EOF
-    elif [[ "${experiment}" == "S1" || "${experiment}" == "S2" || "${experiment}" == "S3" ]] ; then
-        cat > ${tmp}/sedtmp.${pid} << EOF
-            Run = "S1_TRENDY"
-            CO2Method = "Yearly"
-            NDepMethod = "Yearly"
+	elif [[ "${experiment}" == "S1" || "${experiment}" == "S2" || "${experiment}" == "S3" ]] ; then
+            cat > ${tmp}/sedtmp.${pid} << EOF
+            	Run = "S1_TRENDY"
+            	CO2Method = "Yearly"
+            	NDepMethod = "Yearly"
+EOF
+	fi
+    else
+	cat > ${tmp}/sedtmp.${pid} << EOF
+             RunType = "transient"
 EOF
     fi
-    applysed ${tmp}/sedtmp.${pid} ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
+    applysed ${tmp}/sedtmp.${pid} ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
     # LUC
-    if [[ "${experiment}" == "S3" ]] ; then
-       cat > ${tmp}/sedtmp.${pid} << EOF
-           YearStart = ${YearStart}
-           YearEnd   = ${YearEnd}
+    if [[ ${isite} -eq 0 ]] ; then
+	if [[ "${experiment}" == "S3" ]] ; then
+	    cat > ${tmp}/sedtmp.${pid} << EOF
+    		YearStart = ${YearStart}
+    		YearEnd   = ${YearEnd}
 EOF
-    else
-       cat > ${tmp}/sedtmp.${pid} << EOF
-           YearStart = 1700
-           YearEnd   = ${YearEnd}
+	else
+	    cat > ${tmp}/sedtmp.${pid} << EOF
+    		YearStart = 1700
+    		YearEnd   = ${YearEnd}
 EOF
+	fi
+	applysed ${tmp}/sedtmp.${pid} ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
     fi
-    applysed ${tmp}/sedtmp.${pid} ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
 
     # Cable
     if [[ "${experiment}" == "S3" ]] ; then
@@ -843,7 +973,15 @@ EOF
         cable_user%POPLUC              = .true.
         cable_user%POPLUC_RunType      = "${POPLUC_RunType}"
 EOF
+    if [[ ! -f restart/pop_${mettype}_ini.nc ]] ; then
+	${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
+	echo "cable_user%POP_restart_in = \"\"" >> ${tmp}/sedtmp.${pid}
+    fi
+    if [[ ${isite} -eq 1 ]] ; then
+	${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
+    fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
+
     # run model
     cd ${rdir}
     irm logs/log_cable.txt logs/log_out_cable.txt
@@ -860,54 +998,67 @@ if [[ ${dofinal} -eq 1 ]] ; then
     echo "7. Final centennial run"
 
     # Met forcing
-    YearStart=1901
-    YearEnd=2022
+    if [[ ${isite} -eq 0 ]] ; then
+	YearStart=1901
+	YearEnd=2022
+    else
+	YearStart=${start_year}
+	YearEnd=${end_year}
+    fi
     rid=${YearStart}_${YearEnd}
 
-    if [[ "${experiment}" == "S0" ]] ; then
-        cat > ${tmp}/sedtmp.${pid} << EOF
-            Run = "S0_TRENDY"
-            CO2Method = "1700"
-            NDepMethod = "1850"
+    if [[ ${isite} -eq 0 ]] ; then
+	if [[ "${experiment}" == "S0" ]] ; then
+            cat > ${tmp}/sedtmp.${pid} << EOF
+            	Run = "S0_TRENDY"
+            	CO2Method = "1700"
+            	NDepMethod = "1850"
 EOF
-    elif [[ "${experiment}" == "S1" ]] ; then
-        cat > ${tmp}/sedtmp.${pid} << EOF
-            Run = "S1_TRENDY"
-            CO2Method = "Yearly"
-            NDepMethod = "Yearly"
+	elif [[ "${experiment}" == "S1" ]] ; then
+            cat > ${tmp}/sedtmp.${pid} << EOF
+            	Run = "S1_TRENDY"
+            	CO2Method = "Yearly"
+            	NDepMethod = "Yearly"
 EOF
-    elif [[ "${experiment}" == "S2" || "${experiment}" == "S3" ]] ; then
-        cat > ${tmp}/sedtmp.${pid} << EOF
-            Run = "S2_TRENDY"
-            CO2Method = "Yearly"
-            NDepMethod = "Yearly"
-            rainRecycle = .false.
-            lwdnRecycle = .false.
-            swdnRecycle = .false.
-            presRecycle = .false.
-            qairRecycle = .false.
-            TmaxRecycle = .false.
-            TminRecycle = .false.
-            uWindRecycle = .false.
-            vWindRecycle = .false.
-            fDiffRecycle = .false.
+	elif [[ "${experiment}" == "S2" || "${experiment}" == "S3" ]] ; then
+            cat > ${tmp}/sedtmp.${pid} << EOF
+            	Run = "S2_TRENDY"
+            	CO2Method = "Yearly"
+            	NDepMethod = "Yearly"
+            	rainRecycle = .false.
+            	lwdnRecycle = .false.
+            	swdnRecycle = .false.
+            	presRecycle = .false.
+            	qairRecycle = .false.
+            	TmaxRecycle = .false.
+            	TminRecycle = .false.
+            	uWindRecycle = .false.
+            	vWindRecycle = .false.
+            	fDiffRecycle = .false.
+EOF
+	fi
+    else
+	cat > ${tmp}/sedtmp.${pid} << EOF
+            RunType = "historical"
 EOF
     fi
-    applysed ${tmp}/sedtmp.${pid} ${rdir}/cru_${experiment}.nml ${rdir}/cru.nml
+    applysed ${tmp}/sedtmp.${pid} ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
     # LUC
-    if [[ "${experiment}" == "S3" ]] ; then
-       cat > ${tmp}/sedtmp.${pid} << EOF
-           YearStart = ${YearStart}
-           YearEnd   = ${YearEnd}
+    if [[ ${isite} -eq 0 ]] ; then
+	if [[ "${experiment}" == "S3" ]] ; then
+	    cat > ${tmp}/sedtmp.${pid} << EOF
+    		YearStart = ${YearStart}
+    		YearEnd   = ${YearEnd}
 EOF
-    else
-       cat > ${tmp}/sedtmp.${pid} << EOF
-           YearStart = 1700
-           YearEnd   = ${YearEnd}
+	else
+	    cat > ${tmp}/sedtmp.${pid} << EOF
+    		YearStart = 1700
+    		YearEnd   = ${YearEnd}
 EOF
+	fi
+	applysed ${tmp}/sedtmp.${pid} ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
     fi
-    applysed ${tmp}/sedtmp.${pid} ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
 
     # Cable
     if [[ "${experiment}" == "S3" ]] ; then
@@ -933,7 +1084,15 @@ EOF
         cable_user%POPLUC              = .true.
         cable_user%POPLUC_RunType      = "${POPLUC_RunType}"
 EOF
+    if [[ ! -f restart/pop_${mettype}_ini.nc ]] ; then
+	${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
+	echo "cable_user%POP_restart_in = \"\"" >> ${tmp}/sedtmp.${pid}
+    fi
+    if [[ ${isite} -eq 1 ]] ; then
+	${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
+    fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
+
     # run model
     cd ${rdir}
     irm logs/log_cable.txt logs/log_out_cable.txt
