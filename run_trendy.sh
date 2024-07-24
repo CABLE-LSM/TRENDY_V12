@@ -144,30 +144,30 @@ RUN_IDS=
 if [[ ${run_model} -eq 1 ]] ; then
     echo "Submit model runs"
     # 2.1) Write general settings into run script
-    ${ised} -e "s|^#${ntag}.*|#${ntag}${experiment_name}|" ${run_script}
-    ${ised} -e "s|^experiment=.*|experiment='${experiment}'|" ${run_script}
-    ${ised} -e "s|^experiment_name=.*|experiment_name='${experiment_name}'|" ${run_script}
-    ${ised} -e "s|^cablecode=.*|cablecode='${cablecode}'|" ${run_script}
-    ${ised} -e "s|^rundir=.*|rundir='${rundir}'|" ${run_script}
-    ${ised} -e "s|^datadir=.*|datadir='${datadir}'|" ${run_script}
-    ${ised} -e "s|^exe=.*|exe='${exe}'|" ${run_script}
-    ${ised} -e "s|^MetPath=.*|MetPath='${GlobalMetPath}'|" ${run_script}
-    ${ised} -e "s|^MetVersion=.*|MetVersion='${MetVersion}'|" ${run_script}
-    ${ised} -e "s|^TransitionFilePath=.*|TransitionFilePath='${GlobalTransitionFilePath}'|" ${run_script}
-    ${ised} -e "s|^SurfaceFile=.*|SurfaceFile='${SurfaceFile}'|" ${run_script}
-    ${ised} -e "s|^filename_veg=.*|filename_veg='${filename_veg}'|" ${run_script}
-    ${ised} -e "s|^filename_soil=.*|filename_soil='${filename_soil}'|" ${run_script}
-    ${ised} -e "s|^casafile_cnpbiome=.*|casafile_cnpbiome='${casafile_cnpbiome}'|" ${run_script}
-    ${ised} -e "s|^gm_lut_bernacchi_2002=.*|gm_lut_bernacchi_2002='${gm_lut_bernacchi_2002}'|" ${run_script}
-    ${ised} -e "s|^gm_lut_walker_2013=.*|gm_lut_walker_2013='${gm_lut_walker_2013}'|" ${run_script}
-    ${ised} -e "s|^filename_d13c_atm=.*|filename_d13c_atm='${gm_lut_bernacchi_2002}'|" ${run_script}
-    ${ised} -e "s|^ised=.*|ised='${ised}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)#${ntag}.*|\1#${ntag}${experiment_name}|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)experiment=.*|\1experiment='${experiment}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)experiment_name=.*|\1experiment_name='${experiment_name}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)cablecode=.*|\1cablecode='${cablecode}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)rundir=.*|\1rundir='${rundir}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)datadir=.*|\1datadir='${datadir}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)exe=.*|\1exe='${exe}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)MetPath=.*|\1MetPath='${GlobalMetPath}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)MetVersion=.*|\1MetVersion='${MetVersion}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)TransitionFilePath=.*|\1TransitionFilePath='${GlobalTransitionFilePath}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)SurfaceFile=.*|\1SurfaceFile='${SurfaceFile}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)filename_veg=.*|\1filename_veg='${filename_veg}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)filename_soil=.*|\1filename_soil='${filename_soil}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)casafile_cnpbiome=.*|\1casafile_cnpbiome='${casafile_cnpbiome}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)gm_lut_bernacchi_2002=.*|\1gm_lut_bernacchi_2002='${gm_lut_bernacchi_2002}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)gm_lut_walker_2013=.*|\1gm_lut_walker_2013='${gm_lut_walker_2013}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)filename_d13c_atm=.*|\1filename_d13c_atm='${gm_lut_bernacchi_2002}'|" ${run_script}
+    ${ised} -e "s|^\([ ]*\)ised=.*|\1ised='${ised}'|" ${run_script}
 
     # 2.2) Loop over landmasks and start runs
     for ((irun=1; irun<=${nruns}; irun++)) ; do
         runpath="${outpath}/run${irun}"
-        ${ised} -e "s|^runpath=.*|runpath='${runpath}'|" ${run_script}
-        ${ised} -e "s|^LandMaskFile=.*|LandMaskFile='${runpath}/landmask/landmask${irun}.nc'|" ${run_script}
+        ${ised} -e "s|^\([ ]*\)runpath=.*|\1runpath='${runpath}'|" ${run_script}
+        ${ised} -e "s|^\([ ]*\)LandMaskFile=.*|\1LandMaskFile='${runpath}/landmask/landmask${irun}.nc'|" ${run_script}
         RUN_IDS="${RUN_IDS}:$(${pqsub} ${run_script})"
     done
 
@@ -191,7 +191,7 @@ if [[ ${merge_results} -eq 1 ]] ; then
     for mergestep in ${mergesteps} ; do
         for ftype in ${ftypes} ; do
             if [[ ("${ftype}" != "LUC") || ("${experiment}" == "S3" && ("${mergestep}" == "1700_1900" || "${mergestep}" == "1901_"* )) ]] ; then
-                ${ised} -e "s|^python3.*|python3 ${rundir}/merge_to_output2d.py -v -z -o ${outfinal}/cru_out_${ftype}_${mergestep}.nc ${outpath}/run*/outputs/cru_out_${ftype}_${mergestep}.nc|" ${merge_script}
+                ${ised} -e "s|^\([ ]*\)python3.*|\1python3 ${rundir}/merge_to_output2d.py -v -z -o ${outfinal}/cru_out_${ftype}_${mergestep}.nc ${outpath}/run*/outputs/cru_out_${ftype}_${mergestep}.nc|" ${merge_script}
                 if [[ ${run_model} -eq 1 ]] ; then
                     MERGE_IDS="${MERGE_IDS}:$($(dqsub ${RUN_IDS}) ${merge_script})"
                 else
@@ -210,12 +210,12 @@ if [[ ${merge_results} -eq 1 ]] ; then
     # -----------------------------------------------------
 
     echo "Submit cleaning job"
-    ${ised} -e "s|^exp_name=.*|exp_name='${experiment_name}'|" ${cleanup_script}
-    ${ised} -e "s|^outpath=.*|outpath='${outpath}'|" ${cleanup_script}
-    ${ised} -e "s|^nruns=.*|nruns=${nruns}|" ${cleanup_script}
-    ${ised} -e "s|^climate_restart=.*|climate_restart='${climate_restart}'|" ${cleanup_script}
-    ${ised} -e "s|^keep_dump=.*|keep_dump=${keep_dump}|" ${cleanup_script}
-    ${ised} -e "s|^mergesteps=.*|mergesteps='${mergesteps}'|" ${cleanup_script}
+    ${ised} -e "s|^\([ ]*\)exp_name=.*|\1exp_name='${experiment_name}'|" ${cleanup_script}
+    ${ised} -e "s|^\([ ]*\)outpath=.*|\1outpath='${outpath}'|" ${cleanup_script}
+    ${ised} -e "s|^\([ ]*\)nruns=.*|\1nruns=${nruns}|" ${cleanup_script}
+    ${ised} -e "s|^\([ ]*\)climate_restart=.*|\1climate_restart='${climate_restart}'|" ${cleanup_script}
+    ${ised} -e "s|^\([ ]*\)keep_dump=.*|\1keep_dump=${keep_dump}|" ${cleanup_script}
+    ${ised} -e "s|^\([ ]*\)mergesteps=.*|\1mergesteps='${mergesteps}'|" ${cleanup_script}
 
     CLEAN_ID=$(eval $(dqsub ${MERGE_IDS}) ${cleanup_script})
 
