@@ -69,10 +69,10 @@
 # --------------------------------------------------------------------
 # Load Modules
 # --------------------------------------------------------------------
-if [[ -e ${HOME}/miniconda3/bin/conda ]] ; then
+if [[ -e ${HOME}/miniconda3/bin/conda ]] ; then  # biocomp
     eval "$(${HOME}/miniconda3/bin/conda 'shell.bash' 'hook' 2> /dev/null)"
     conda activate pystd
-else
+else  # gadi
     pdir=${isdir}
     . /etc/bashrc
     module purge
@@ -94,12 +94,12 @@ experiment="S3"
 experiment_name='FR-Pue'
 # Code directory
 cablecode="${HOME}/prog/github/cable/cable.cable-pop_trendy"
-if [[ ${isite} -eq 0 ]] ; then
+if [[ ${isite} -eq 0 ]] ; then  # landmask
     # Script directory
     rundir="${HOME}/projects/cable/sites/${experiment_name}"
     # Data directory
     datadir="${HOME}/projects/coco2/cable-pop"
-else
+else  # site data
     # Script directory
     # rundir="${HOME}/projects/coco2/cable-pop/output/${experiment_name}"
     rundir="${HOME}/projects/cable/sites/${experiment_name}"
@@ -116,10 +116,10 @@ SurfaceFile="${globaldatadir}/cable/CABLE-AUX/offline/gridinfo_CSIRO_1x1.nc"
 # Using Global Meteorology
 # Output directory of the run
 runpath=${rundir}
-if [[ ${isite} -eq 0 ]] ; then
+if [[ ${isite} -eq 0 ]] ; then  # landmask
     # Global Meteorology
     MetPath="${globaldatadir}/met_forcing/CRUJRA2023/daily_1deg_met"
-else
+else  # site data
     # # Output directory of the run
     # runpath=.
     # Site Meteorology
@@ -173,9 +173,9 @@ purge_restart=0  # Delete all restart files?
 # CABLE Settings
 # --------------------------------------------------------------------
 # MetType
-if [[ ${isite} -eq 0 ]] ; then
+if [[ ${isite} -eq 0 ]] ; then  # landmask
     mettype="cru"   # "cru"
-else
+else  # site data
     mettype="site"  # "site"
 fi
 # Cable
@@ -202,7 +202,7 @@ gm_lut_walker_2013="${cablecode}/params/gm_LUT_351x3601x7_1pt8245_Walker2013.nc"
 # 13C
 filename_d13c_atm="${cablecode}/params/gm_LUT_351x3601x7_1pt8245_Bernacchi2002.nc"
 
-if [[ ${isite} -eq 1 ]] ; then
+if [[ ${isite} -eq 1 ]] ; then  # site data
     # no LUC in site level runs
     doiniluc=0
     # input years
@@ -288,9 +288,9 @@ cd ${pdir}
 
 # OS
 # Linux: "sed --in-place=.old" ; macOS/Unix: "sed -i .old"
-if [[ $(uname -s) == Darwin ]] ; then
+if [[ $(uname -s) == Darwin ]] ; then  # macOS
     ised="sed -i .old"
-else
+else  # Linux
     ised="sed --in-place=.old"
 fi
 
@@ -358,7 +358,7 @@ else
     fdiff_bool=.false.
 fi
 
-if [[ ${isite} -eq 0 ]] ; then
+if [[ ${isite} -eq 0 ]] ; then  # landmask
     cat > ${tmp}/sedtmp.${pid} << EOF
         rainFile     = "${MetPath}/pre/pre_<startdate>_<enddate>.nc"
         lwdnFile     = "${MetPath}/dlwrf/dlwrf_<startdate>_<enddate>.nc"
@@ -386,9 +386,9 @@ if [[ ${isite} -eq 0 ]] ; then
         CO2Method = "1700"
         NDepMethod = "1850"
         ReadDiffFrac = ${fdiff_bool}
-        DThrs        = 3.0                ! **CABLE** timestep hours (not the met timestep)
+        DThrs        = 3.0  ! **CABLE** timestep hours (not the met timestep)
 EOF
-else
+else  # site data
     cat > ${tmp}/sedtmp.${pid} << EOF
         RunType       = "spinup"
         CO2NDepFile   = "${CO2NdepFile}"
@@ -401,12 +401,12 @@ EOF
 fi
 applysed ${tmp}/sedtmp.${pid} ${ndir}/${mettype}.nml ${rdir}/${mettype}_${experiment}.nml
 
-if [[ ${isite} -eq 0 ]] ; then
+if [[ ${isite} -eq 0 ]] ; then  # landmask
     cp ${ndir}/met_names.nml ${rdir}
 fi
 
 # global landuse change namelist
-if [[ ${isite} -eq 0 ]] ; then
+if [[ ${isite} -eq 0 ]] ; then  # landmask
     cat > ${tmp}/sedtmp.${pid} << EOF
         TransitionFilePath = "${TransitionFilePath}"
         ClimateFile        = "${ClimateFile}"
@@ -470,7 +470,7 @@ cat > ${tmp}/sedtmp.${pid} << EOF
     cable_user%c13o2_restart_in_luc    = "restart/${mettype}_c13o2_luc_rst.nc"
     cable_user%c13o2_restart_out_luc   = "restart/${mettype}_c13o2_luc_rst.nc"
 EOF
-if [[ ${isite} -eq 1 ]] ; then
+if [[ ${isite} -eq 1 ]] ; then  # site data
     ${ised} -e "/filename%met/s|=.*|= \"${MetFile}\"|" ${tmp}/sedtmp.${pid}
 fi
 if [[ ${call_pop} -eq 1 ]] ; then
@@ -526,7 +526,7 @@ if [[ ${doclimate} -eq 1 ]] ; then
     cp ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
     # LUC
-    if [[ ${isite} -eq 0 ]] ; then
+    if [[ ${isite} -eq 0 ]] ; then  # landmask
 	cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
     fi
 
@@ -576,7 +576,7 @@ if [[ ${dofromzero} -eq 1 ]] ; then
     cp ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
     # LUC
-    if [[ ${isite} -eq 0 ]] ; then
+    if [[ ${isite} -eq 0 ]] ; then  # landmask
 	cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
     fi
 
@@ -604,7 +604,7 @@ if [[ ${dofromzero} -eq 1 ]] ; then
         cable_user%c13o2_restart_in_flux  = ""
         cable_user%c13o2_restart_in_pools = ""
 EOF
-    if [[ ${isite} -eq 1 ]] ; then
+    if [[ ${isite} -eq 1 ]] ; then  # site data
 	${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
     fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
@@ -634,7 +634,7 @@ if [[ ${doequi1} -eq 1 ]] ; then
         cp ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
         # LUC
-	if [[ ${isite} -eq 0 ]] ; then
+	if [[ ${isite} -eq 0 ]] ; then  # landmask
 	    cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
 	fi
 
@@ -661,7 +661,7 @@ EOF
 	    ${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
 	    echo "cable_user%POP_restart_in = \"\"" >> ${tmp}/sedtmp.${pid}
 	fi
-	if [[ ${isite} -eq 1 ]] ; then
+	if [[ ${isite} -eq 1 ]] ; then  # site data
 	    ${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
 	fi
         applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
@@ -683,7 +683,7 @@ EOF
         cp ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
         # LUC
-	if [[ ${isite} -eq 0 ]] ; then
+	if [[ ${isite} -eq 0 ]] ; then  # landmask
 	    cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
 	fi
 
@@ -709,7 +709,7 @@ EOF
 	    ${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
 	    echo "cable_user%POP_restart_in = \"\"" >> ${tmp}/sedtmp.${pid}
 	fi
-	if [[ ${isite} -eq 1 ]] ; then
+	if [[ ${isite} -eq 1 ]] ; then  # site data
 	    ${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
 	fi
         applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
@@ -739,7 +739,7 @@ if [[ ${doequi2} -eq 1 ]] ; then
         cp ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
 	# LUC
-	if [[ ${isite} -eq 0 ]] ; then
+	if [[ ${isite} -eq 0 ]] ; then  # landmask
 	    cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
 	fi
 
@@ -765,7 +765,7 @@ EOF
 	    ${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
 	    echo "cable_user%POP_restart_in = \"\"" >> ${tmp}/sedtmp.${pid}
 	fi
-	if [[ ${isite} -eq 1 ]] ; then
+	if [[ ${isite} -eq 1 ]] ; then  # site data
 	    ${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
 	fi
         applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
@@ -787,7 +787,7 @@ EOF
             cp ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
             # LUC
-	    if [[ ${isite} -eq 0 ]] ; then
+	    if [[ ${isite} -eq 0 ]] ; then  # landmask
 		cp ${rdir}/luc_${experiment}.nml ${rdir}/luc.nml
 	    fi
 
@@ -813,7 +813,7 @@ EOF
 		${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
 		echo "cable_user%POP_restart_in = \"\"" >> ${tmp}/sedtmp.${pid}
 	    fi
-	    if [[ ${isite} -eq 1 ]] ; then
+	    if [[ ${isite} -eq 1 ]] ; then  # site data
 		${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
 	    fi
             applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
@@ -839,9 +839,9 @@ if [[ ${doiniluc} -eq 1 ]] ; then
     # Met forcing
     YearStart=1580  # should be the same as in the global luc.nml file!
     YearEnd=1699
-    if [[ ${isite} -eq 0 ]] ; then
+    if [[ ${isite} -eq 0 ]] ; then  # landmask
 	cp ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
-    else
+    else  # site data
 	cat > ${tmp}/sedtmp.${pid} << EOF
     RunType = "transient"
 EOF
@@ -849,7 +849,7 @@ EOF
     fi
 
     # LUC
-    if [[ ${isite} -eq 0 ]] ; then
+    if [[ ${isite} -eq 0 ]] ; then  # landmask
 	cat > ${tmp}/sedtmp.${pid} << EOF
     	    YearStart = ${YearStart}
     	    YearEnd   = ${YearEnd}
@@ -882,7 +882,7 @@ EOF
 	${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
 	echo "cable_user%POP_restart_in = \"\"" >> ${tmp}/sedtmp.${pid}
     fi
-    if [[ ${isite} -eq 1 ]] ; then
+    if [[ ${isite} -eq 1 ]] ; then  # site data
 	${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
     fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
@@ -903,16 +903,16 @@ if [[ ${doinidyn} -eq 1 ]] ; then
     echo "6. Transient run (full dynamic spinup)"
 
     # Met forcing
-    if [[ ${isite} -eq 0 ]] ; then
+    if [[ ${isite} -eq 0 ]] ; then  # landmask
 	YearStart=1700
 	YearEnd=1900
-    else
+    else  # site data
 	YearStart=${start_year_transient}
 	YearEnd=${end_year_transient}
     fi
     rid=${YearStart}_${YearEnd}
 
-    if [[ ${isite} -eq 0 ]] ; then
+    if [[ ${isite} -eq 0 ]] ; then  # landmask
 	if [[ "${experiment}" == "S0" ]] ; then
             cat > ${tmp}/sedtmp.${pid} << EOF
             	Run = "S0_TRENDY"
@@ -926,7 +926,7 @@ EOF
             	NDepMethod = "Yearly"
 EOF
 	fi
-    else
+    else  # site data
 	cat > ${tmp}/sedtmp.${pid} << EOF
              RunType = "transient"
 EOF
@@ -934,7 +934,7 @@ EOF
     applysed ${tmp}/sedtmp.${pid} ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
     # LUC
-    if [[ ${isite} -eq 0 ]] ; then
+    if [[ ${isite} -eq 0 ]] ; then  # landmask
 	if [[ "${experiment}" == "S3" ]] ; then
 	    cat > ${tmp}/sedtmp.${pid} << EOF
     		YearStart = ${YearStart}
@@ -977,7 +977,7 @@ EOF
 	${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
 	echo "cable_user%POP_restart_in = \"\"" >> ${tmp}/sedtmp.${pid}
     fi
-    if [[ ${isite} -eq 1 ]] ; then
+    if [[ ${isite} -eq 1 ]] ; then  # site data
 	${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
     fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
@@ -998,16 +998,16 @@ if [[ ${dofinal} -eq 1 ]] ; then
     echo "7. Final centennial run"
 
     # Met forcing
-    if [[ ${isite} -eq 0 ]] ; then
+    if [[ ${isite} -eq 0 ]] ; then  # landmask
 	YearStart=1901
 	YearEnd=2022
-    else
+    else  # site data
 	YearStart=${start_year}
 	YearEnd=${end_year}
     fi
     rid=${YearStart}_${YearEnd}
 
-    if [[ ${isite} -eq 0 ]] ; then
+    if [[ ${isite} -eq 0 ]] ; then  # landmask
 	if [[ "${experiment}" == "S0" ]] ; then
             cat > ${tmp}/sedtmp.${pid} << EOF
             	Run = "S0_TRENDY"
@@ -1037,7 +1037,7 @@ EOF
             	fDiffRecycle = .false.
 EOF
 	fi
-    else
+    else  # site data
 	cat > ${tmp}/sedtmp.${pid} << EOF
             RunType = "historical"
 EOF
@@ -1045,7 +1045,7 @@ EOF
     applysed ${tmp}/sedtmp.${pid} ${rdir}/${mettype}_${experiment}.nml ${rdir}/${mettype}.nml
 
     # LUC
-    if [[ ${isite} -eq 0 ]] ; then
+    if [[ ${isite} -eq 0 ]] ; then  # landmask
 	if [[ "${experiment}" == "S3" ]] ; then
 	    cat > ${tmp}/sedtmp.${pid} << EOF
     		YearStart = ${YearStart}
@@ -1088,7 +1088,7 @@ EOF
 	${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
 	echo "cable_user%POP_restart_in = \"\"" >> ${tmp}/sedtmp.${pid}
     fi
-    if [[ ${isite} -eq 1 ]] ; then
+    if [[ ${isite} -eq 1 ]] ; then  # site data
 	${ised} -e "/cable_user%POPLUC[^_]/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
     fi
     applysed ${tmp}/sedtmp.${pid} ${rdir}/cable_${experiment}.nml ${rdir}/cable.nml
