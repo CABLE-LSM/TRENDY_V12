@@ -43,12 +43,14 @@ mergesteps="1700_1900 1901_2022"  # sub-steps to be merged
 
 ### Spatial subruns ###
 create_landmasks=1                 # 1: create new landmasks, 0: use existing masks
-nruns=31                          # number of runs in parallel
+nruns=31                           # number of runs in parallel
 # extent="64.0,66.0,60.0,62.0"     # "global" or "lon_min,lon_max,lat_min,lat_max"
 extent="global"
 climate_restart="cru_climate_rst"  # name of climate restart file (without file extension)
 keep_dump=0                        # 1/0: keep or discard dump files.
                                    # They are always kept for LUC runs
+inodes=""  # empty or comma-delimited list of nodes to use
+xnodes=""  # empty or comma-delimited list of nodes to exclude
 
 ### Directories and files ###
 # Code directory - set this to where your version of the code is located
@@ -116,14 +118,49 @@ if [[ -e ${HOME}/miniconda3/bin/conda ]] ; then
     {
         echo "sbatch --ignore-pbs --parsable --dependency=afterok${1}"
     }
+    function isub()
+    {
+	if [[ $# -gt 0 ]] ; then
+            echo "--nodelist=${1}"
+	else
+	    echo ""
+	fi
+    }
+    function xsub()
+    {
+	if [[ $# -gt 0 ]] ; then
+            echo "--exclude=${1}"
+	else
+	    echo ""
+	fi
+    }
     ntag="SBATCH --job-name="
+    ttag="SBATCH --time="
 else
     pqsub="qsub"
     function dqsub()
     {
         echo "qsub -W \"depend=afterok${1}\""
     }
+    # isub and xsub not tested on gadi
+    function isub()
+    {
+	if [[ $# -gt 0 ]] ; then
+            echo "-l \"nodes=${1/,/:}\""
+	else
+	    echo ""
+	fi
+    }
+    function xsub()
+    {
+	if [[ $# -gt 0 ]] ; then
+            echo "-l \"h=!${1/,/:!}\""
+	else
+	    echo ""
+	fi
+    }
     ntag="PBS -N "
+    ttag="PBS -l walltime="
 fi
 
 ## ---------------------------- End Settings ---------------------------------- ##
@@ -141,6 +178,16 @@ fi
 # 2) Run CABLE
 # -----------------------------------------------------------------------
 RUN_IDS=
+if [[ -n ${inodes} ]] ; then
+    inode=$(echo ${inodes} | cut -d ',' -f 1)
+else
+    iopt=''
+fi
+if [[ -n ${xnodes} ]] ; then
+    xopt=$(xsub ${xnodes})
+else
+    xopt=''
+fi
 if [[ ${run_model} -eq 1 ]] ; then
     echo "Submit model runs"
     # 2.1) Write general settings into run script
@@ -168,7 +215,11 @@ if [[ ${run_model} -eq 1 ]] ; then
         runpath="${outpath}/run${irun}"
         ${ised} -e "s|^\([ ]*\)runpath=.*|\1runpath='${runpath}'|" ${run_script}
         ${ised} -e "s|^\([ ]*\)LandMaskFile=.*|\1LandMaskFile='${runpath}/landmask/landmask${irun}.nc'|" ${run_script}
-        RUN_IDS="${RUN_IDS}:$(${pqsub} ${run_script})"
+	if [[ -n ${inodes} ]] ; then
+	    inode=$(echo ${inodes} | tr ',' '\n' | grep -v ${inode})
+	    iopt=$(isub ${inode})
+	fi
+        RUN_IDS="${RUN_IDS}:$(${pqsub} ${iopt} ${xopt} ${run_script})"
     done
 
     if [[ -f ${run_script}.old ]] ; then rm ${run_script}.old ; fi
