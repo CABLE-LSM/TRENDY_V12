@@ -88,6 +88,8 @@ fi
 # Basic settings (parsed through from wrapper script)
 # --------------------------------------------------------------------
 isite=1  # 0/1: 0: use global forcing data with landmask; 1: use site data
+outaverage7="all"  # output%averaging of final run (step 7):
+                   #   "all", "daily", "monthly"
 # TRENDY experiment (S0, S1, S2, S3, S4, S5, S6)
 experiment="S3"
 # Name of the experiment (= name of output folder)
@@ -1083,6 +1085,7 @@ EOF
         cable_user%POP_out             = "ini"
         cable_user%POPLUC              = .true.
         cable_user%POPLUC_RunType      = "${POPLUC_RunType}"
+        output%averaging               = "${outaverage7}"
 EOF
     if [[ ! -f restart/pop_${mettype}_ini.nc ]] ; then
 	${ised} -e "/cable_user%POP_fromZero/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
