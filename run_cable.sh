@@ -189,6 +189,7 @@ coordinate_photosyn=1 # 1/0: Do/Do not coordinate photosynthesis
 coord=F               # T/F: version of photosyn. optimisation (optimised(F) or forced (T))
 acclimate_photosyn=1  # 1/0: Do/Do not acclimate photosynthesis
 call_pop=1          # 1/0: Do/Do not use POP population dynamics model, coupled to CASA
+laifeedback=1       # 1/0: Do/Do not calculate LAI prognostically
 doc13o2=0           # 1/0: Do/Do not calculate 13C
 c13o2_simple_disc=0 # 1/0: simple or full 13C leaf discrimination
 # Parameter files
@@ -453,6 +454,7 @@ cat > ${tmp}/sedtmp.${pid} << EOF
     output%grid                        = "land"
     output%vars5D                      = .FALSE.
     leaps                              = .false.
+    l_laiFeedbk                        = .true.
     cable_user%SOIL_STRUC              = "default"
     cable_user%Rubisco_parameters      = "${Rubisco_params}"
     cable_user%CALL_POP                = .false.
@@ -495,6 +497,11 @@ if [[ ${doc13o2} -eq 1 ]] ; then
 fi
 if [[ ${call_blaze} -eq 1 ]] ; then
     ${ised} -e "/cable_user%CALL_BLAZE/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
+fi
+if [[ ${laifeedback} -eq 1 ]] ; then
+    ${ised} -e "/l_laiFeedbk/s|=.*|= .true.|" ${tmp}/sedtmp.${pid}
+else
+    ${ised} -e "/l_laiFeedbk/s|=.*|= .false.|" ${tmp}/sedtmp.${pid}
 fi
 applysed ${tmp}/sedtmp.${pid} ${ndir}/cable.nml ${rdir}/cable_${experiment}.nml
 irm ${tmp}/sedtmp.${pid}.old
